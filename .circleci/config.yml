@@ -1,0 +1,99 @@
+version: 2.1
+orbs:
+  python: circleci/python@2.0.3
+  node: circleci/node@5.0.3
+
+commands:
+  setup_nodejs:
+    steps:
+      - node/install:
+          install-yarn: true
+          node-version: "16.13"
+      - node/install-packages:
+          pkg-manager: yarn
+  setup_brownie:
+    steps:
+      - restore_cache:
+          keys:
+            - v1-compilers-{{ checksum "brownie-config.yaml" }}
+      - setup_nodejs
+      - python/install-packages:
+          pkg-manager: pip
+          include-branch-in-cache-key: false
+      - run:
+          name: Install Ganache
+          command: npm install -g ganache@7.6.0
+      - run:
+          name: Compile project
+          command: brownie compile
+      - save_cache:
+          paths: [~/.solcx, ~/.vvm]
+          key: v1-compilers-{{ checksum "brownie-config.yaml" }}
+  install_foundry:
+    steps:
+      - run:
+          name: Install Foundry
+          command: |
+            wget https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup -O /tmp/foundryup
+            chmod +x /tmp/foundryup
+            mkdir -p $HOME/.foundry/bin $HOME/.foundry/share/man/man1
+            /tmp/foundryup
+jobs:
+  foundry_integration_tests:
+    executor: python/default
+    resource_class: small
+    steps:
+      - checkout
+      - setup_nodejs
+      - install_foundry
+      - run:
+          name: Run Foundry Unit Tests
+          no_output_timeout: 20m
+          command: $HOME/.foundry/bin/forge test --mc ProtocolIntegration -vv
+  foundry_unit_tests:
+    executor: python/default
+    resource_class: medium
+    steps:
+      - checkout
+      - setup_nodejs
+      - install_foundry
+      - run:
+          name: Run Foundry Unit Tests
+          no_output_timeout: 20m
+          command: $HOME/.foundry/bin/forge test --nmc 'ProtocolIntegration|WeightUpdateTest' -vv
+  deploy_mainnet:
+    executor: python/default
+    resource_class: small
+    steps:
+      - checkout
+      - setup_brownie
+      - run:
+          name: Launch Ganache
+          command: npx ganache-cli --chain.vmErrorsOnRPCResponse true --chain.chainId 1337 --wallet.totalAccounts 10 --wallet.defaultBalance 100000 --hardfork london --fork.url https://mainnet.infura.io/v3/${WEB3_INFURA_PROJECT_ID} --miner.blockGasLimit 12000000 --wallet.mnemonic brownie --server.port 9545 --wallet.unlockedAccounts 0xedaEb101f34d767f263c0fe6B8d494E3d071F0bA --chain.allowUnlimitedContractSize
+          background: true
+      - run:
+          name: Wait for Ganache to complete setup
+          command: sleep 5
+      - run:
+          name: Create Brownie persistent development
+          command: brownie networks add Ethereum development-persistent host=http://localhost:9545 chainid=1337
+      - run:
+          name: Run deployment scripts
+          command: scripts/deployment/deploy.sh
+  lint:
+    executor: python/default
+    resource_class: small
+    steps:
+      - checkout
+      - setup_nodejs
+      - run:
+          name: Lint Contracts
+          command: yarn run lint
+
+workflows:
+  test:
+    jobs:
+      # - foundry_integration_tests Disabled temporarily as it is not working
+      - foundry_unit_tests
+      - deploy_mainnet
+      - lint

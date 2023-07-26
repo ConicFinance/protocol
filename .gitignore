@@ -1,0 +1,12 @@
+build/
+__pycache__
+node_modules
+env/
+node_modules/
+.env
+yarn-error.log
+.vscode*
+cache/
+out/
+lcov.info
+misc/update-weights-encoded.txt

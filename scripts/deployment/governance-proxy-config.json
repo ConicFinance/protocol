@@ -1,0 +1,200 @@
+[
+  {
+    "function": "function grantRole(bytes32 role, address account)",
+    "selector": "0x2f2ff15d",
+    "delay": 7,
+    "critical": false
+  },
+  {
+    "function": "function revokeRole(bytes32 role, address account)",
+    "selector": "0xd547741f",
+    "delay": 7,
+    "critical": false
+  },
+  {
+    "function": "function addCurvePool(address _pool)",
+    "selector": "0xf5cfc592",
+    "delay": 3,
+    "critical": false
+  },
+  {
+    "function": "function removeCurvePool(address _pool)",
+    "selector": "0xddd2c684",
+    "delay": 3,
+    "critical": false
+  },
+  {
+    "function": "function updateDepegThreshold(uint256 newDepegThreshold_)",
+    "selector": "0x32f44c42",
+    "delay": 3,
+    "critical": false
+  },
+  {
+    "function": "function setMaxIdleCurveLpRatio(uint256 maxIdleCurveLpRatio_)",
+    "selector": "0xb0a43968",
+    "delay": 3,
+    "critical": false
+  },
+  {
+    "function": "function setMaxDeviation(uint256 maxDeviation_)",
+    "selector": "0xdddbc049",
+    "delay": 3,
+    "critical": false
+  },
+  {
+    "function": "function addPool(address poolAddress)",
+    "selector": "0xd914cd4b",
+    "delay": 7,
+    "critical": false
+  },
+  {
+    "function": "function removePool(address poolAddress)",
+    "selector": "0x3b7d0946",
+    "delay": 3,
+    "critical": false
+  },
+  {
+    "function": "function shutdownPool(address poolAddress)",
+    "selector": "0x64b0aa94",
+    "delay": 3,
+    "critical": false
+  },
+  {
+    "function": "function updateWeights((address, (address, uint256)[]) update)",
+    "selector": "0xe17a803d",
+    "delay": "0.125",
+    "critical": true
+  },
+  {
+    "function": "function updateAllWeights((address, (address, uint256)[])[] weights)",
+    "selector": "0x81e0f765",
+    "delay": "0.125",
+    "critical": true
+  },
+  {
+    "function": "function setConvexBooster(address _convexBooster)",
+    "selector": "0xc3bb30b5",
+    "delay": 1,
+    "critical": false
+  },
+  {
+    "function": "function setCurveHandler(address _curveHandler)",
+    "selector": "0xfa5d1058",
+    "delay": 3,
+    "critical": true
+  },
+  {
+    "function": "function setConvexHandler(address _convexHandler)",
+    "selector": "0x88beb5d5",
+    "delay": 3,
+    "critical": true
+  },
+  {
+    "function": "function setInflationManager(address manager)",
+    "selector": "0x7f4c43ac",
+    "delay": 3,
+    "critical": true
+  },
+  {
+    "function": "function setPriceOracle(address oracle)",
+    "selector": "0x530e784f",
+    "delay": 3,
+    "critical": true
+  },
+  {
+    "function": "function setCurveRegistryCache(address curveRegistryCache_)",
+    "selector": "0x52e3d331",
+    "delay": 3,
+    "critical": true
+  },
+  {
+    "function": "function setWeightUpdateMinDelay(uint256 delay)",
+    "selector": "0x0e2cf72d",
+    "delay": 3,
+    "critical": false
+  },
+  {
+    "function": "function addExtraReward(address reward)",
+    "selector": "0x5e43c47b",
+    "delay": 0,
+    "critical": false
+  },
+  {
+    "function": "function addBatchExtraRewards(address[] memory _rewards)",
+    "selector": "0xfe09d54d",
+    "delay": 0,
+    "critical": false
+  },
+  {
+    "function": "function removeExtraReward(address tokenAddress)",
+    "selector": "0xa80ff90a",
+    "delay": 0,
+    "critical": false
+  },
+  {
+    "function": "function setExtraRewardsCurvePool(address extraReward_, address curvePool_)",
+    "selector": "0x03950fb5",
+    "delay": 0,
+    "critical": false
+  },
+  {
+    "function": "function setFeePercentage(uint256 _feePercentage)",
+    "selector": "0xae06c1b7",
+    "delay": 3,
+    "critical": false
+  },
+  {
+    "function": "function setImbalanceThreshold(address token, uint256 threshold)",
+    "selector": "0x38726f08",
+    "delay": 0,
+    "critical": false
+  },
+  {
+    "function": "function setImbalanceThreshold(uint256 threshold)",
+    "selector": "0x9a336555",
+    "delay": 0,
+    "critical": false
+  },
+  {
+    "function": "function setCustomOracle(address token, address oracle)",
+    "selector": "0x67b7b289",
+    "delay": 3,
+    "critical": true
+  },
+  {
+    "function": "function shutDown()",
+    "selector": "0x10b9e583",
+    "delay": 0,
+    "critical": false
+  },
+  {
+    "function": "function setCncRebalancingRewardPerDollarPerSecond(uint256 _cncRebalancingRewardPerDollarPerSecond)",
+    "selector": "0x8f3c14cb",
+    "delay": 3,
+    "critical": false
+  },
+  {
+    "function": "function setMaxRebalancingRewardDollarMultiplier(uint256 _maxRebalancingRewardDollarMultiplier)",
+    "selector": "0xc0c99342",
+    "delay": 3,
+    "critical": false
+  },
+  {
+    "function": "function setMinRebalancingRewardDollarMultiplier(uint256 _minRebalancingRewardDollarMultiplier)",
+    "selector": "0x9f7c4976",
+    "delay": 3,
+    "critical": false
+  },
+  {
+    "function": "function switchRebalancingRewardsHandler(address previousHandler, address newHandler)",
+    "selector": "0x2e45c987",
+    "delay": 3,
+    "critical": true
+  },
+  {
+    "function": "function switchLpTokenStaker(address previousTokenStaker, address newTokenStaker)",
+    "selector": "0x6bbe080e",
+    "delay": 3,
+    "critical": true
+  }
+]

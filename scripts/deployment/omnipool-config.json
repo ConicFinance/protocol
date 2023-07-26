@@ -1,0 +1,115 @@
+{
+  "dai": {
+    "underlying": "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+    "lpName": "Conic DAI",
+    "lpSymbol": "cncDAI",
+    "curvePools": [
+      {
+        "name": "FRAX+3CRV",
+        "address": "0xd632f22692FaC7611d2AA1C0D552930D43CAEd3B",
+        "weight": "0.2077"
+      },
+      {
+        "name": "DAI+USDC+USDT",
+        "address": "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7",
+        "weight": "0.5562"
+      },
+      {
+        "name": "sUSD+3CRV",
+        "address": "0xA5407eAE9Ba41422680e2e00537571bcC53efBfD",
+        "weight": "0.2361"
+      }
+    ]
+  },
+  "usdc": {
+    "underlying": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+    "lpName": "Conic USDC",
+    "lpSymbol": "cncUSDC",
+    "curvePools": [
+      {
+        "name": "DAI+USDC+USDT",
+        "address": "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7",
+        "weight": "0.4459"
+      },
+      {
+        "name": "FRAX+USDC",
+        "address": "0xDcEF968d416a41Cdac0ED8702fAC8128A64241A2",
+        "weight": "0.1998"
+      },
+      {
+        "name": "FRAX+3CRV",
+        "address": "0xd632f22692FaC7611d2AA1C0D552930D43CAEd3B",
+        "weight": "0.1963"
+      },
+      {
+        "name": "sUSD+3CRV",
+        "address": "0xA5407eAE9Ba41422680e2e00537571bcC53efBfD",
+        "weight": "0.158"
+      }
+    ]
+  },
+  "eth": {
+    "underlying": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+    "lpName": "Conic ETH",
+    "lpSymbol": "cncETH",
+    "curvePools": [
+      {
+        "name": "ETH+stETH",
+        "address": "0xDC24316b9AE028F1497c275EB9192a3Ea0f67022",
+        "weight": "0.9"
+      },
+      {
+        "name": "ETH+cbETH",
+        "address": "0x5FAE7E604FC3e24fd43A72867ceBaC94c65b404A",
+        "weight": "0.05"
+      },
+      {
+        "name": "ETH+rETH",
+        "address": "0x0f3159811670c117c372428D4E69AC32325e4D0F",
+        "weight": "0.05"
+      }
+    ]
+  },
+  "usdt": {
+    "underlying": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+    "lpName": "Conic USDT",
+    "lpSymbol": "cncUSDT",
+    "curvePools": [
+      {
+        "name": "FRAX+3CRV",
+        "address": "0xd632f22692FaC7611d2AA1C0D552930D43CAEd3B"
+      },
+      {
+        "name": "DAI+USDC+USDT",
+        "address": "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7"
+      },
+      {
+        "name": "MIM+3CRV",
+        "address": "0x5a6A4D54456819380173272A5E8E9B9904BdF41B"
+      }
+    ]
+  },
+  "crvUSD": {
+    "underlying": "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E",
+    "lpName": "Conic crvUSD",
+    "lpSymbol": "cncCRVUSD",
+    "curvePools": [
+      {
+        "name": "USDT+crvUSD",
+        "address": "0x390f3595bCa2Df7d23783dFd126427CCeb997BF4"
+      },
+      {
+        "name": "USDC+crvUSD",
+        "address": "0x4DEcE678ceceb27446b35C672dC7d61F30bAD69E"
+      },
+      {
+        "name": "TUSD+crvUSD",
+        "address": "0x34D655069F4cAc1547E4C8cA284FfFF5ad4A8db0"
+      },
+      {
+        "name": "USDP+crvUSD",
+        "address": "0xCa978A0528116DDA3cbA9ACD3e68bc6191CA53D0"
+      }
+    ]
+  }
+}

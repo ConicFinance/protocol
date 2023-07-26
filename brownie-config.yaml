@@ -1,0 +1,34 @@
+compiler:
+  solc:
+    version: 0.8.17
+    evm_version: london
+    optimizer:
+      enabled: true
+      runs: 200
+    remappings:
+      - "@openzeppelin/contracts=node_modules/@openzeppelin/contracts"
+      - "@chainlink/contracts=node_modules/@chainlink/contracts/src/v0.8"
+
+networks:
+  development:
+    cmd_settings:
+      evm_version: london
+      default_balance: 10000
+      unlimited_contract_size: True
+  mainnet-fork:
+    cmd_settings:
+      evm_version: london
+      default_balance: 10000
+      unlimited_contract_size: True
+      unlock:
+        - 0xedaEb101f34d767f263c0fe6B8d494E3d071F0bA # Deployer
+        - 0xB27DC5f8286f063F11491c8f349053cB37718bea # Multisig
+        - 0xFcb19e6a322b27c06842A71e8c725399f049AE3a # USDC Owner
+        - 0x47ac0Fb4F2D84898e4D9E7b4DaB3C24507a6D503 # Binance (because it's rich)
+  development-persistent:
+    cmd_settings:
+      evm_version: london
+      default_balance: 10000
+      unlimited_contract_size: True
+      unlock:
+        - 0xedaEb101f34d767f263c0fe6B8d494E3d071F0bA # Deployer
