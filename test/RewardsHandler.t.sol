@@ -24,10 +24,10 @@ contract RewardsHandlerTest is ConicPoolBaseTest {
             false
         );
 
-        conicPool.addCurvePool(CurvePools.FRAX_3CRV);
-        conicPool.addCurvePool(CurvePools.TRI_POOL);
+        conicPool.addPool(CurvePools.FRAX_3CRV);
+        conicPool.addPool(CurvePools.TRI_POOL);
 
-        controller.allowMultipleDepositsWithdraws(bb8, true);
+        controller.setAllowedMultipleDepositsWithdraws(bb8, true);
 
         IConicPool.PoolWeight[] memory weights = new IConicPool.PoolWeight[](2);
         weights[0] = IConicPool.PoolWeight(CurvePools.FRAX_3CRV, 0.6e18);

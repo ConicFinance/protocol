@@ -12,10 +12,10 @@ import "../LpToken.sol";
 import "../Pausable.sol";
 
 contract MockRewardManager is IRewardManager {
-    address public immutable override pool;
+    address public immutable override conicPool;
 
     constructor(address _pool) {
-        pool = _pool;
+        conicPool = _pool;
     }
 
     function accountCheckpoint(address account) external {}
@@ -97,11 +97,11 @@ contract MockPool is IConicPool, Pausable {
 
     function computeDeviationRatio() external view returns (uint256) {}
 
-    function allCurvePools() external view returns (address[] memory) {}
+    function allPools() external view returns (address[] memory) {}
 
-    function curvePoolsCount() external view override returns (uint256) {}
+    function poolsCount() external view override returns (uint256) {}
 
-    function getCurvePoolAtIndex(uint256 _index) external view returns (address) {}
+    function getPoolAtIndex(uint256 _index) external view returns (address) {}
 
     function curveLpOracle() external view returns (IOracle) {}
 
@@ -115,7 +115,15 @@ contract MockPool is IConicPool, Pausable {
 
     function unstakeAndWithdraw(uint256 _amount, uint256 _minAmount) external returns (uint256) {}
 
+    function unstakeAndWithdraw(
+        uint256 _amount,
+        uint256 _minAmount,
+        address to
+    ) external returns (uint256) {}
+
     function withdraw(uint256 _amount, uint256 _minAmount) external returns (uint256) {}
+
+    function withdraw(uint256 _amount, uint256 _minAmount, address to) external returns (uint256) {}
 
     function isBalanced() external view returns (bool) {}
 
@@ -207,9 +215,9 @@ contract MockPool is IConicPool, Pausable {
         return 0;
     }
 
-    function removeCurvePool(address pool) external {}
+    function removePool(address pool) external {}
 
-    function addCurvePool(address pool) external {}
+    function addPool(address pool) external {}
 
     function usdExchangeRate() external pure override returns (uint256) {
         return 1e18;

@@ -79,4 +79,6 @@ interface ICurvePoolV1 {
         int128 i,
         uint256 min_amount
     ) external;
+
+    function fee() external view returns (uint256);
 }

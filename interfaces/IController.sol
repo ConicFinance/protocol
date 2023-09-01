@@ -5,6 +5,7 @@ import "./pools/IConicPool.sol";
 import "./IGenericOracle.sol";
 import "./tokenomics/IInflationManager.sol";
 import "./tokenomics/ILpTokenStaker.sol";
+import "./IPoolAdapter.sol";
 import "./ICurveRegistryCache.sol";
 
 interface IController {
@@ -20,6 +21,9 @@ interface IController {
     event WeightUpdateMinDelaySet(uint256 weightUpdateMinDelay);
     event PauseManagerSet(address indexed manager, bool isManager);
     event MultiDepositsWithdrawsWhitelistSet(address pool, bool allowed);
+    event MinimumTaintedTransferAmountSet(address indexed token, uint256 amount);
+    event DefaultPoolAdapterSet(address poolAdapter);
+    event CustomPoolAdapterSet(address indexed pool, address poolAdapter);
 
     struct WeightUpdate {
         address conicPoolAddress;
@@ -36,6 +40,15 @@ interface IController {
 
     // views
     function curveRegistryCache() external view returns (ICurveRegistryCache);
+
+    // pool adapter
+    function poolAdapterFor(address pool) external view returns (IPoolAdapter);
+
+    function defaultPoolAdapter() external view returns (IPoolAdapter);
+
+    function setDefaultPoolAdapter(address poolAdapter) external;
+
+    function setCustomPoolAdapter(address pool, address poolAdapter) external;
 
     /// lp token staker
     function switchLpTokenStaker(address _lpTokenStaker) external;
@@ -97,4 +110,13 @@ interface IController {
 
     // deposit/withdrawal whitelist
     function isAllowedMultipleDepositsWithdraws(address poolAddress) external view returns (bool);
+
+    function setAllowedMultipleDepositsWithdraws(address account, bool allowed) external;
+
+    function getMultipleDepositsWithdrawsWhitelist() external view returns (address[] memory);
+
+    // tainted transfer amount
+    function setMinimumTaintedTransferAmount(address token, uint256 amount) external;
+
+    function getMinimumTaintedTransferAmount(address token) external view returns (uint256);
 }

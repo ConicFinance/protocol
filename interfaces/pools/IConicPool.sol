@@ -71,15 +71,23 @@ interface IConicPool is IPausable {
 
     function usdExchangeRate() external view returns (uint256);
 
-    function allCurvePools() external view returns (address[] memory);
+    function allPools() external view returns (address[] memory);
 
-    function curvePoolsCount() external view returns (uint256);
+    function poolsCount() external view returns (uint256);
 
-    function getCurvePoolAtIndex(uint256 _index) external view returns (address);
+    function getPoolAtIndex(uint256 _index) external view returns (address);
 
     function unstakeAndWithdraw(uint256 _amount, uint256 _minAmount) external returns (uint256);
 
+    function unstakeAndWithdraw(
+        uint256 _amount,
+        uint256 _minAmount,
+        address _to
+    ) external returns (uint256);
+
     function withdraw(uint256 _amount, uint256 _minAmount) external returns (uint256);
+
+    function withdraw(uint256 _amount, uint256 _minAmount, address _to) external returns (uint256);
 
     function updateWeights(PoolWeight[] memory poolWeights) external;
 
@@ -89,11 +97,9 @@ interface IConicPool is IPausable {
 
     function getAllocatedUnderlying() external view returns (PoolWithAmount[] memory);
 
-    function removeCurvePool(address pool) external;
+    function removePool(address pool) external;
 
-    function addCurvePool(address pool) external;
-
-    function totalCurveLpBalance(address curvePool_) external view returns (uint256);
+    function addPool(address pool) external;
 
     function rebalancingRewardActive() external view returns (bool);
 

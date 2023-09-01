@@ -7,6 +7,7 @@ import "../lib/forge-std/src/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 import "../contracts/Controller.sol";
+import "../contracts/adapters/CurveAdapter.sol";
 import "../interfaces/pools/IConicPool.sol";
 import "../interfaces/access/IGovernanceProxy.sol";
 import "../contracts/ConicEthPool.sol";
@@ -48,6 +49,8 @@ library CurvePools {
     address internal constant CRVUSD_USDC = 0x4DEcE678ceceb27446b35C672dC7d61F30bAD69E;
     address internal constant CRVUSD_USDP = 0xCa978A0528116DDA3cbA9ACD3e68bc6191CA53D0;
     address internal constant CRVUSD_TUSD = 0x34D655069F4cAc1547E4C8cA284FfFF5ad4A8db0;
+    address internal constant CRVUSD_FRAX = 0x0CD6f267b2086bea681E922E19D40512511BE538;
+    address internal constant FRAX_USDP = 0xaE34574AC03A15cd58A92DC79De7B1A0800F1CE3;
 }
 
 library Tokens {
@@ -76,6 +79,7 @@ library Tokens {
     address internal constant RETH_ETH_LP = address(0x6c38cE8984a890F5e46e6dF6117C26b3F1EcfC9C);
     address internal constant CBETH = address(0xBe9895146f7AF43049ca1c1AE358B0541Ea49704);
     address internal constant RETH = address(0xae78736Cd615f374D3085123A210448E74Fc6393);
+    address internal constant CRVUSD = address(0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E);
 }
 
 library ConvexPid {
@@ -102,6 +106,8 @@ library MainnetAddresses {
     address internal constant CNC_DISTRIBUTOR = 0x74eA6D777a4aEC782EBA0AcAE61142AAc69D3E2F;
     address internal constant CURVE_TRICRYPTO_FACTORY_HANDLER =
         0x9335BF643C455478F8BE40fA20B5164b90215B80;
+    address internal constant CURVE_TRICRYPTO_FACTORY_HANDLER_2 =
+        0x30a4249C42be05215b6063691949710592859697;
     address internal constant CONVEX_BOOSTER = 0xF403C135812408BFbE8713b5A23a04b3D48AAE31;
 }
 
@@ -114,9 +120,9 @@ contract ConicTest is Test {
     bytes32 constant LOCKER_V2_MERKLE_ROOT =
         0x1fb27a93b1597fb63a71400761fa335d34875bc82ed5d1e2182cbb0a966049a7;
 
-    address public bb8 = makeAddr("bb8");
-    address public r2 = makeAddr("r2");
-    address public c3po = makeAddr("c3po");
+    address public bb8 = makeAddr("bb8"); // 0xE2Fca394F3a28F1717EFAB57339540306F303f6f
+    address public r2 = makeAddr("r2"); // 0x2A71967CF1d84B413bb804418b54407822914D80
+    address public c3po = makeAddr("c3po"); // 0x6763367385beC272a5BA2C1Fb3e7FCd36485e4FD
 
     uint256 internal mainnetFork;
 
@@ -124,7 +130,7 @@ contract ConicTest is Test {
 
     function setUp() public virtual {
         string memory MAINNET_RPC_URL = vm.envString("MAINNET_RPC_URL");
-        mainnetFork = vm.createFork(MAINNET_RPC_URL, 17_378_718);
+        mainnetFork = vm.createFork(MAINNET_RPC_URL, 17_478_718);
     }
 
     function _setFork(uint256 forkId) internal {
@@ -132,6 +138,11 @@ contract ConicTest is Test {
         vm.selectFork(forkId);
         vm.mockCall(
             MainnetAddresses.CURVE_TRICRYPTO_FACTORY_HANDLER,
+            abi.encodeWithSignature("is_registered(address)"),
+            abi.encode(false)
+        );
+        vm.mockCall(
+            MainnetAddresses.CURVE_TRICRYPTO_FACTORY_HANDLER_2,
             abi.encodeWithSignature("is_registered(address)"),
             abi.encode(false)
         );
@@ -166,6 +177,8 @@ contract ConicTest is Test {
             registryCache.initPool(CurvePools.CRVUSD_USDC);
             registryCache.initPool(CurvePools.CRVUSD_USDP);
             registryCache.initPool(CurvePools.CRVUSD_TUSD);
+            registryCache.initPool(CurvePools.CRVUSD_FRAX);
+            registryCache.initPool(CurvePools.FRAX_USDP);
         }
         return registryCache;
     }
@@ -175,9 +188,6 @@ contract ConicTest is Test {
         ICurveRegistryCache registryCache
     ) internal returns (Controller) {
         Controller controller = new Controller(address(cnc), address(registryCache));
-        if (_isFork) {
-            vm.prank(MainnetAddresses.LP_TOKEN_STAKER);
-        }
         return controller;
     }
 
@@ -188,9 +198,10 @@ contract ConicTest is Test {
         controller.setConvexHandler(address(new ConvexHandler(address(controller))));
         InflationManager inflationManager = _createInflationManager(controller);
         _createLpTokenStaker(inflationManager, cnc);
-        GenericOracle genericOracle = _createGenericOracle();
-        _createCurveLpOracle(controller, genericOracle);
+        CurveLPOracle curveLpOracle = _createCurveLpOracle(controller);
+        GenericOracle genericOracle = _createGenericOracle(address(curveLpOracle));
         controller.setPriceOracle(address(genericOracle));
+        controller.setDefaultPoolAdapter(address(_createCurveAdapter(controller)));
 
         // Adding crvUSD Custom oracle
         CrvUsdOracle crvUsdOracle = new CrvUsdOracle(address(genericOracle));
@@ -199,14 +210,12 @@ contract ConicTest is Test {
         return controller;
     }
 
-    function _createCurveLpOracle(
-        Controller controller,
-        GenericOracle genericOracle
-    ) internal returns (CurveLPOracle) {
-        CurveLPOracle curveLPOracle = new CurveLPOracle(address(controller));
-        IOracle chainlinkOracle = new ChainlinkOracle();
-        genericOracle.initialize(address(curveLPOracle), address(chainlinkOracle));
-        return curveLPOracle;
+    function _createCurveLpOracle(Controller controller) internal returns (CurveLPOracle) {
+        return new CurveLPOracle(address(controller));
+    }
+
+    function _createCurveAdapter(Controller controller) internal returns (IPoolAdapter) {
+        return new CurveAdapter(controller);
     }
 
     function _createInflationManager(Controller controller) internal returns (InflationManager) {
@@ -229,7 +238,7 @@ contract ConicTest is Test {
             vm.prank(MainnetAddresses.LP_TOKEN_STAKER);
         }
         cnc.addMinter(address(rebalancingRewardsHandler));
-        controller.allowMultipleDepositsWithdraws(address(rebalancingRewardsHandler), true);
+        controller.setAllowedMultipleDepositsWithdraws(address(rebalancingRewardsHandler), true);
         return rebalancingRewardsHandler;
     }
 
@@ -265,8 +274,11 @@ contract ConicTest is Test {
         return locker;
     }
 
-    function _createGenericOracle() internal returns (GenericOracle) {
-        return new GenericOracle();
+    function _createGenericOracle(address curveLPOracle) internal returns (GenericOracle) {
+        GenericOracle genericOracle = new GenericOracle();
+        IOracle chainlinkOracle = new ChainlinkOracle();
+        genericOracle.initialize(curveLPOracle, address(chainlinkOracle));
+        return genericOracle;
     }
 
     function _createConicPool(

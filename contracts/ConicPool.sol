@@ -20,10 +20,11 @@ contract ConicPool is BaseConicPool {
     ) BaseConicPool(_underlying, _rewardManager, _controller, _lpTokenName, _symbol, _cvx, _crv) {}
 
     function _updatePriceCache() internal override {
-        uint256 length_ = _curvePools.length();
+        uint256 length_ = _pools.length();
         IOracle priceOracle_ = controller.priceOracle();
         for (uint256 i; i < length_; i++) {
-            address lpToken_ = controller.curveRegistryCache().lpToken(_curvePools.at(i));
+            address pool = _pools.at(i);
+            address lpToken_ = controller.poolAdapterFor(pool).lpToken(pool);
             _cachedPrices[lpToken_] = priceOracle_.getUSDPrice(lpToken_);
         }
         address underlying_ = address(underlying);

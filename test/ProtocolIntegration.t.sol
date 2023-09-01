@@ -263,10 +263,10 @@ contract ProtocolIntegrationTest is ConicPoolBaseTest {
             false
         );
 
-        daiPool.addCurvePool(CurvePools.FRAX_3CRV);
-        daiPool.addCurvePool(CurvePools.TRI_POOL);
-        daiPool.addCurvePool(CurvePools.SUSD_DAI_USDT_USDC);
-        daiPool.addCurvePool(CurvePools.MIM_3CRV);
+        daiPool.addPool(CurvePools.FRAX_3CRV);
+        daiPool.addPool(CurvePools.TRI_POOL);
+        daiPool.addPool(CurvePools.SUSD_DAI_USDT_USDC);
+        daiPool.addPool(CurvePools.MIM_3CRV);
         IConicPool.PoolWeight[] memory weights = new IConicPool.PoolWeight[](4);
         weights[0] = IConicPool.PoolWeight(CurvePools.FRAX_3CRV, 0.2077e18);
         weights[1] = IConicPool.PoolWeight(CurvePools.TRI_POOL, 0.4562e18);
@@ -286,9 +286,9 @@ contract ProtocolIntegrationTest is ConicPoolBaseTest {
             true
         );
 
-        usdcPool.addCurvePool(CurvePools.STETH_ETH_POOL);
-        usdcPool.addCurvePool(CurvePools.RETH_ETH_POOL);
-        usdcPool.addCurvePool(CurvePools.CBETH_ETH_POOL);
+        usdcPool.addPool(CurvePools.STETH_ETH_POOL);
+        usdcPool.addPool(CurvePools.RETH_ETH_POOL);
+        usdcPool.addPool(CurvePools.CBETH_ETH_POOL);
         IConicPool.PoolWeight[] memory weights = new IConicPool.PoolWeight[](3);
         weights[0] = IConicPool.PoolWeight(CurvePools.STETH_ETH_POOL, 0.8829e18);
         weights[1] = IConicPool.PoolWeight(CurvePools.RETH_ETH_POOL, 0.0218e18);
@@ -307,11 +307,11 @@ contract ProtocolIntegrationTest is ConicPoolBaseTest {
             false
         );
 
-        usdcPool.addCurvePool(CurvePools.TRI_POOL);
-        usdcPool.addCurvePool(CurvePools.FRAX_BP);
-        usdcPool.addCurvePool(CurvePools.FRAX_3CRV);
-        usdcPool.addCurvePool(CurvePools.SUSD_DAI_USDT_USDC);
-        usdcPool.addCurvePool(CurvePools.MIM_3CRV);
+        usdcPool.addPool(CurvePools.TRI_POOL);
+        usdcPool.addPool(CurvePools.FRAX_BP);
+        usdcPool.addPool(CurvePools.FRAX_3CRV);
+        usdcPool.addPool(CurvePools.SUSD_DAI_USDT_USDC);
+        usdcPool.addPool(CurvePools.MIM_3CRV);
         IConicPool.PoolWeight[] memory weights = new IConicPool.PoolWeight[](5);
         weights[0] = IConicPool.PoolWeight(CurvePools.TRI_POOL, 0.2459e18);
         weights[1] = IConicPool.PoolWeight(CurvePools.FRAX_BP, 0.1998e18);
@@ -332,9 +332,9 @@ contract ProtocolIntegrationTest is ConicPoolBaseTest {
             false
         );
 
-        fraxPool.addCurvePool(CurvePools.FRAX_BP);
-        fraxPool.addCurvePool(CurvePools.GUSD_FRAX_BP);
-        fraxPool.addCurvePool(CurvePools.FRAX_3CRV);
+        fraxPool.addPool(CurvePools.FRAX_BP);
+        fraxPool.addPool(CurvePools.GUSD_FRAX_BP);
+        fraxPool.addPool(CurvePools.FRAX_3CRV);
         IConicPool.PoolWeight[] memory weights = new IConicPool.PoolWeight[](3);
         weights[0] = IConicPool.PoolWeight(CurvePools.FRAX_BP, 0.4452e18);
         weights[1] = IConicPool.PoolWeight(CurvePools.GUSD_FRAX_BP, 0.129e18);
@@ -352,9 +352,9 @@ contract ProtocolIntegrationTest is ConicPoolBaseTest {
             "cncUSDT",
             false
         );
-        usdtPool.addCurvePool(CurvePools.FRAX_3CRV);
-        usdtPool.addCurvePool(CurvePools.TRI_POOL);
-        usdtPool.addCurvePool(CurvePools.MIM_3CRV);
+        usdtPool.addPool(CurvePools.FRAX_3CRV);
+        usdtPool.addPool(CurvePools.TRI_POOL);
+        usdtPool.addPool(CurvePools.MIM_3CRV);
         IConicPool.PoolWeight[] memory weights = new IConicPool.PoolWeight[](3);
         weights[0] = IConicPool.PoolWeight(CurvePools.FRAX_3CRV, 0.3702e18);
         weights[1] = IConicPool.PoolWeight(CurvePools.TRI_POOL, 0.4323e18);
@@ -372,10 +372,10 @@ contract ProtocolIntegrationTest is ConicPoolBaseTest {
             "cncCRVUSD",
             false
         );
-        crvUsdPool.addCurvePool(CurvePools.CRVUSD_USDT);
-        crvUsdPool.addCurvePool(CurvePools.CRVUSD_USDC);
-        crvUsdPool.addCurvePool(CurvePools.CRVUSD_USDP);
-        crvUsdPool.addCurvePool(CurvePools.CRVUSD_TUSD);
+        crvUsdPool.addPool(CurvePools.CRVUSD_USDT);
+        crvUsdPool.addPool(CurvePools.CRVUSD_USDC);
+        crvUsdPool.addPool(CurvePools.CRVUSD_USDP);
+        crvUsdPool.addPool(CurvePools.CRVUSD_TUSD);
         IConicPool.PoolWeight[] memory weights = new IConicPool.PoolWeight[](4);
         weights[0] = IConicPool.PoolWeight(CurvePools.CRVUSD_USDT, 0.2e18);
         weights[1] = IConicPool.PoolWeight(CurvePools.CRVUSD_USDC, 0.3e18);
@@ -419,7 +419,7 @@ contract ProtocolIntegrationTest is ConicPoolBaseTest {
     function _getNewRandomWeights(
         IConicPool pool
     ) internal returns (IConicPool.PoolWeight[] memory weights) {
-        address[] memory curvePools = pool.allCurvePools();
+        address[] memory curvePools = pool.allPools();
         weights = new IConicPool.PoolWeight[](curvePools.length);
         uint256 leftToAssign = 1e18;
         for (uint256 i = 0; i < curvePools.length; i++) {
@@ -461,7 +461,7 @@ contract ProtocolIntegrationTest is ConicPoolBaseTest {
     function _getWeights(IConicPool pool) internal view returns (uint256[] memory result) {
         IConicPool.PoolWeight[] memory weights = pool.getWeights();
         result = new uint256[](weights.length);
-        for (uint256 i = 0; i < pool.curvePoolsCount(); i++) {
+        for (uint256 i = 0; i < pool.poolsCount(); i++) {
             result[i] = weights[i].weight;
         }
     }
@@ -469,7 +469,7 @@ contract ProtocolIntegrationTest is ConicPoolBaseTest {
     function _getAllocated(IConicPool pool) internal view returns (uint256[] memory result) {
         IConicPool.PoolWithAmount[] memory allocated = pool.getAllocatedUnderlying();
         result = new uint256[](allocated.length);
-        for (uint256 i = 0; i < pool.curvePoolsCount(); i++) {
+        for (uint256 i = 0; i < pool.poolsCount(); i++) {
             result[i] = allocated[i].amount;
         }
     }
@@ -494,7 +494,7 @@ contract ProtocolIntegrationTest is ConicPoolBaseTest {
     function _getCurrentWeights(
         IConicPool pool
     ) internal view returns (IConicPool.PoolWeight[] memory) {
-        uint256 length_ = pool.curvePoolsCount();
+        uint256 length_ = pool.poolsCount();
         IConicPool.PoolWeight[] memory weights_ = new IConicPool.PoolWeight[](length_);
         uint256 totalWeight;
         for (uint256 i; i < length_; i++) {
@@ -504,7 +504,7 @@ contract ProtocolIntegrationTest is ConicPoolBaseTest {
             if (poolWeight + totalWeight > 1e18) {
                 poolWeight = 1e18 - totalWeight;
             }
-            weights_[i] = IConicPool.PoolWeight(pool.getCurvePoolAtIndex(i), poolWeight);
+            weights_[i] = IConicPool.PoolWeight(pool.getPoolAtIndex(i), poolWeight);
             totalWeight += poolWeight;
         }
         return weights_;
@@ -518,15 +518,6 @@ contract ProtocolIntegrationTest is ConicPoolBaseTest {
             deviations[i] = actualWeights[i].weight.absSub(targetWeights[i].weight);
         }
         return deviations;
-    }
-
-    function _getPoolsLpBalances(IConicPool pool) internal view returns (uint256[] memory) {
-        address[] memory curvePools = pool.allCurvePools();
-        uint256[] memory balances = new uint256[](curvePools.length);
-        for (uint256 i; i < balances.length; i++) {
-            balances[i] = pool.totalCurveLpBalance(curvePools[i]);
-        }
-        return balances;
     }
 
     function _boundValue(uint256 value, uint256 min, uint256 max) internal pure returns (uint256) {

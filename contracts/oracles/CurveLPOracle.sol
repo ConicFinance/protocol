@@ -20,8 +20,8 @@ contract CurveLPOracle is IOracle, Ownable {
 
     event ImbalanceThresholdUpdated(address indexed token, uint256 threshold);
 
-    uint256 internal constant _MAX_IMBALANCE_THRESHOLD = 0.1e18;
-    mapping(address => uint256) public imbalanceThresholds;
+    uint256 internal constant _MAX_IMBALANCE_BUFFER = 0.1e18;
+    mapping(address => uint256) public customImbalanceBuffers;
 
     IController private immutable controller;
 
@@ -55,12 +55,12 @@ contract CurveLPOracle is IOracle, Ownable {
         uint256 value;
         uint256 numberOfCoins = curveRegistryCache_.nCoins(pool);
         uint256[] memory prices = new uint256[](numberOfCoins);
-        uint256[] memory thresholds = new uint256[](numberOfCoins);
+        uint256[] memory imbalanceBuffers = new uint256[](numberOfCoins);
         for (uint256 i; i < numberOfCoins; i++) {
             address coin = coins[i];
             uint256 price = genericOracle.getUSDPrice(coin);
             prices[i] = price;
-            thresholds[i] = imbalanceThresholds[token];
+            imbalanceBuffers[i] = customImbalanceBuffers[coin];
             require(price > 0, "price is 0");
             uint256 balance = _getBalance(pool, i);
             require(balance > 0, "balance is 0");
@@ -75,7 +75,7 @@ contract CurveLPOracle is IOracle, Ownable {
                 assetType: curveRegistryCache_.assetType(pool),
                 decimals: decimals,
                 prices: prices,
-                thresholds: thresholds
+                imbalanceBuffers: imbalanceBuffers
             })
         );
 
@@ -83,10 +83,10 @@ contract CurveLPOracle is IOracle, Ownable {
         return value.divDown(IERC20(token).totalSupply());
     }
 
-    function setImbalanceThreshold(address token, uint256 threshold) external onlyOwner {
-        require(threshold <= _MAX_IMBALANCE_THRESHOLD, "threshold too high");
-        imbalanceThresholds[token] = threshold;
-        emit ImbalanceThresholdUpdated(token, threshold);
+    function setImbalanceThreshold(address token, uint256 buffer) external onlyOwner {
+        require(buffer <= _MAX_IMBALANCE_BUFFER, "buffer too high");
+        customImbalanceBuffers[token] = buffer;
+        emit ImbalanceThresholdUpdated(token, buffer);
     }
 
     function _getCurvePool(address lpToken_) internal view returns (address) {

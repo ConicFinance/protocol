@@ -8,7 +8,14 @@ import "./ScaledMath.sol";
 library CurvePoolUtils {
     using ScaledMath for uint256;
 
-    uint256 internal constant _DEFAULT_IMBALANCE_THRESHOLD = 0.02e18;
+    /// @dev by default, allow for 10 bps deviation regardless of pool fees
+    uint256 internal constant _DEFAULT_IMBALANCE_BUFFER = 30e14;
+
+    /// @dev Curve scales the `fee` by 1e10
+    uint8 internal constant _CURVE_POOL_FEE_DECIMALS = 10;
+
+    /// @dev allow imbalance to be buffer + 3x the fee, e.g. if fee is 3.6 bps and buffer is 30 bps, allow 40.8 bps
+    uint256 internal constant _FEE_IMBALANCE_MULTIPLIER = 3;
 
     enum AssetType {
         USD,
@@ -24,13 +31,18 @@ library CurvePoolUtils {
         AssetType assetType;
         uint256[] decimals;
         uint256[] prices;
-        uint256[] thresholds;
+        uint256[] imbalanceBuffers;
     }
 
     function ensurePoolBalanced(PoolMeta memory poolMeta) internal view {
         uint256 fromDecimals = poolMeta.decimals[0];
         uint256 fromBalance = 10 ** fromDecimals;
         uint256 fromPrice = poolMeta.prices[0];
+
+        uint256 poolFee = ICurvePoolV1(poolMeta.pool).fee().convertScale(
+            _CURVE_POOL_FEE_DECIMALS,
+            18
+        );
         for (uint256 i = 1; i < poolMeta.numberOfCoins; i++) {
             uint256 toDecimals = poolMeta.decimals[i];
             uint256 toPrice = poolMeta.prices[i];
@@ -51,7 +63,7 @@ library CurvePoolUtils {
             }
 
             require(
-                _isWithinThreshold(toExpected, toActual, poolMeta.thresholds[i]),
+                _isWithinThreshold(toExpected, toActual, poolFee, poolMeta.imbalanceBuffers[i]),
                 "pool is not balanced"
             );
         }
@@ -60,9 +72,11 @@ library CurvePoolUtils {
     function _isWithinThreshold(
         uint256 a,
         uint256 b,
-        uint256 imbalanceTreshold
+        uint256 poolFee,
+        uint256 imbalanceBuffer
     ) internal pure returns (bool) {
-        if (imbalanceTreshold == 0) imbalanceTreshold = _DEFAULT_IMBALANCE_THRESHOLD;
+        if (imbalanceBuffer == 0) imbalanceBuffer = _DEFAULT_IMBALANCE_BUFFER;
+        uint256 imbalanceTreshold = imbalanceBuffer + poolFee * _FEE_IMBALANCE_MULTIPLIER;
         if (a > b) return (a - b).divDown(a) <= imbalanceTreshold;
         return (b - a).divDown(b) <= imbalanceTreshold;
     }

@@ -57,16 +57,6 @@ contract ConvexHandler is IConvexHandler {
         _claimConvexReward(_curvePool, _conicPool);
     }
 
-    /// @notice Claims CRV, CVX and extra rewards from Convex for multiple Curve LP tokens staked.
-    /// @param _curvePools List of Curve pools from which LP tokens have been deposited
-    /// @param _conicPool Conic pool for which rewards will be claimed.
-    function claimBatchEarnings(address[] memory _curvePools, address _conicPool) external {
-        for (uint256 i; i < _curvePools.length; i++) {
-            address pool = _curvePools[i];
-            _claimConvexReward(pool, _conicPool);
-        }
-    }
-
     function getRewardPool(address _curvePool) public view returns (address) {
         return controller.curveRegistryCache().getRewardPool(_curvePool);
     }

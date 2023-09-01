@@ -6,7 +6,7 @@ import "../libraries/Types.sol";
 interface IConvexHandler {
     function deposit(address _curvePool, uint256 _amount) external;
 
-    function claimBatchEarnings(address[] memory _curvePools, address _conicPool) external;
+    function claimEarnings(address _curvePool, address _conicPool) external;
 
     function getRewardPool(address _curvePool) external view returns (address);
 

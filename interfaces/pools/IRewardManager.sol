@@ -24,7 +24,7 @@ interface IRewardManager {
 
     function addBatchExtraRewards(address[] memory rewards) external;
 
-    function pool() external view returns (address);
+    function conicPool() external view returns (address);
 
     function setFeePercentage(uint256 _feePercentage) external;
 

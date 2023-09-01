@@ -37,14 +37,14 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
             false
         );
 
-        controller.allowMultipleDepositsWithdraws(bb8, true);
+        controller.setAllowedMultipleDepositsWithdraws(bb8, true);
 
         rewardManager = conicPool.rewardManager();
 
         curveHandler = ICurveHandler(controller.curveHandler());
         convexHandler = IConvexHandler(controller.convexHandler());
 
-        conicPool.addCurvePool(CurvePools.TRI_POOL);
+        conicPool.addPool(CurvePools.TRI_POOL);
 
         IConicPool.PoolWeight[] memory weights = new IConicPool.PoolWeight[](1);
         weights[0] = IConicPool.PoolWeight(CurvePools.TRI_POOL, 1e18);
@@ -83,9 +83,7 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
         assertTrue(lpTokenStaker.getBalanceForPool(address(conicPool)) > 0);
 
         IBooster(controller.convexBooster()).earmarkRewards(ConvexPid.TRI_POOL);
-        assertTrue(
-            convexHandler.getCrvEarnedBatch(address(conicPool), conicPool.allCurvePools()) > 0
-        );
+        assertTrue(convexHandler.getCrvEarnedBatch(address(conicPool), conicPool.allPools()) > 0);
         (uint256 cncBalance, uint256 crvBalance, uint256 cvxBalance) = rewardManager
             .claimableRewards(bb8);
         assertTrue(cncBalance > 0);

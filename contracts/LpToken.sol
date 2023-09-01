@@ -41,7 +41,7 @@ contract LpToken is ILpToken, ERC20 {
         uint256 _amount,
         address ubo
     ) external override onlyMinter returns (uint256) {
-        _ensureSingleEvent(ubo);
+        _ensureSingleEvent(ubo, _amount);
         _mint(_account, _amount);
         return _amount;
     }
@@ -51,7 +51,7 @@ contract LpToken is ILpToken, ERC20 {
         uint256 _amount,
         address ubo
     ) external override onlyMinter returns (uint256) {
-        _ensureSingleEvent(ubo);
+        _ensureSingleEvent(ubo, _amount);
         _burn(_owner, _amount);
         return _amount;
     }
@@ -61,7 +61,7 @@ contract LpToken is ILpToken, ERC20 {
         _taint(from, to);
     }
 
-    function _beforeTokenTransfer(address from, address to, uint256) internal override {
+    function _beforeTokenTransfer(address from, address to, uint256 amount) internal override {
         // mint/burn are handled in their respective functions
         if (from == address(0) || to == address(0)) return;
 
@@ -70,11 +70,16 @@ contract LpToken is ILpToken, ERC20 {
         if (from == lpTokenStaker || to == lpTokenStaker) return;
 
         // taint any other type of transfer
-        _taint(from, to);
+        if (amount > controller.getMinimumTaintedTransferAmount(address(this))) {
+            _taint(from, to);
+        }
     }
 
-    function _ensureSingleEvent(address ubo) internal {
-        if (!controller.isAllowedMultipleDepositsWithdraws(ubo)) {
+    function _ensureSingleEvent(address ubo, uint256 amount) internal {
+        if (
+            !controller.isAllowedMultipleDepositsWithdraws(ubo) &&
+            amount > controller.getMinimumTaintedTransferAmount(address(this))
+        ) {
             require(_lastEvent[ubo] != block.number, "cannot mint/burn twice in a block");
             _lastEvent[ubo] = block.number;
         }

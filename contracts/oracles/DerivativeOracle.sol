@@ -16,11 +16,10 @@ contract DerivativeOracle is IOracle, Ownable {
     using ScaledMath for uint256;
     using CurveLPTokenPricing for ICurvePoolV1;
 
-    event ImbalanceThresholdUpdated(uint256 threshold);
+    event ImbalanceBufferUpdated(uint256 buffer);
 
-    uint256 internal constant _DEFAULT_IMBALANCE_THRESHOLD = 0.02e18;
-    uint256 internal constant _MAX_IMBALANCE_THRESHOLD = 0.1e18;
-    uint256 public imbalanceThreshold;
+    uint256 internal constant _MAX_IMBALANCE_BUFFER = 0.1e18;
+    uint256 public imbalanceBuffer;
 
     IController private immutable _controller;
     IOracle private immutable _genericOracle;
@@ -57,13 +56,13 @@ contract DerivativeOracle is IOracle, Ownable {
         require(assetType != CurvePoolUtils.AssetType.CRYPTO, "crypto pool not supported");
 
         uint256[] memory prices = new uint256[](_numberOfCoins);
-        uint256[] memory thresholds = new uint256[](_numberOfCoins);
-        uint256 imbalanceThreshold_ = imbalanceThreshold;
+        uint256[] memory imbalanceBuffers = new uint256[](_numberOfCoins);
+        uint256 imbalanceBuffer_ = imbalanceBuffer;
         for (uint256 i; i < _numberOfCoins; i++) {
             address coin = coins[i];
             uint256 price = _genericOracle.getUSDPrice(coin);
             prices[i] = price;
-            thresholds[i] = imbalanceThreshold_;
+            imbalanceBuffers[i] = imbalanceBuffer_;
             require(price > 0, "price is 0");
         }
 
@@ -75,7 +74,7 @@ contract DerivativeOracle is IOracle, Ownable {
                 assetType: assetType,
                 decimals: decimals,
                 prices: prices,
-                thresholds: thresholds
+                imbalanceBuffers: imbalanceBuffers
             })
         );
 
@@ -86,10 +85,10 @@ contract DerivativeOracle is IOracle, Ownable {
             );
     }
 
-    function setImbalanceThreshold(uint256 threshold) external onlyOwner {
-        require(threshold <= _MAX_IMBALANCE_THRESHOLD, "threshold too high");
-        imbalanceThreshold = threshold;
-        emit ImbalanceThresholdUpdated(threshold);
+    function setImbalanceBuffer(uint256 buffer) external onlyOwner {
+        require(buffer <= _MAX_IMBALANCE_BUFFER, "buffer too high");
+        imbalanceBuffer = buffer;
+        emit ImbalanceBufferUpdated(buffer);
     }
 
     function _getCurvePool(address lpToken_) internal view returns (address) {

@@ -29,10 +29,10 @@ contract ConicEthPoolTest is ConicPoolBaseTest {
             true
         );
 
-        conicPool.addCurvePool(CurvePools.STETH_ETH_POOL);
-        conicPool.addCurvePool(CurvePools.CBETH_ETH_POOL);
+        conicPool.addPool(CurvePools.STETH_ETH_POOL);
+        conicPool.addPool(CurvePools.CBETH_ETH_POOL);
 
-        controller.allowMultipleDepositsWithdraws(bb8, true);
+        controller.setAllowedMultipleDepositsWithdraws(bb8, true);
 
         IConicPool.PoolWeight[] memory weights = new IConicPool.PoolWeight[](2);
         weights[0] = IConicPool.PoolWeight(CurvePools.STETH_ETH_POOL, 0.6e18);
@@ -61,7 +61,7 @@ contract ConicEthPoolTest is ConicPoolBaseTest {
         assertApproxEqRel(10 * 10 ** decimals, lpReceived, 0.01e18);
 
         // Validating that we received the Curve LP tokens
-        address[] memory curvePools_ = conicPool.allCurvePools();
+        address[] memory curvePools_ = conicPool.allPools();
         for (uint256 i; i < curvePools_.length; i++) {
             address curvePool_ = curvePools_[i];
             address lpToken_ = controller.curveRegistryCache().lpToken(curvePool_);
@@ -181,7 +181,7 @@ contract ConicEthPoolTest is ConicPoolBaseTest {
     }
 
     function testHandleInvalidConvexPid() public {
-        address[] memory pools = conicPool.allCurvePools();
+        address[] memory pools = conicPool.allPools();
         address curvePool = pools[0];
         vm.expectRevert("convex pool pid is shutdown");
         conicPool.handleInvalidConvexPid(curvePool);
@@ -205,7 +205,7 @@ contract ConicEthPoolTest is ConicPoolBaseTest {
     }
 
     function testHandleDepeggedPool() public {
-        address[] memory pools = conicPool.allCurvePools();
+        address[] memory pools = conicPool.allPools();
         address curvePool = pools[0];
         vm.expectRevert("pool is not depegged");
         conicPool.handleDepeggedCurvePool(curvePool);
@@ -228,11 +228,11 @@ contract ConicEthPoolTest is ConicPoolBaseTest {
         vm.prank(bb8);
         conicPool.deposit(10 * 10 ** decimals, 1, false);
 
-        address[] memory pools = conicPool.allCurvePools();
+        address[] memory pools = conicPool.allPools();
         address curvePool = pools[0];
 
-        vm.expectRevert("pool has funds");
-        conicPool.removeCurvePool(curvePool);
+        vm.expectRevert("pool has allocated funds");
+        conicPool.removePool(curvePool);
 
         skip(14 days);
 
@@ -244,8 +244,8 @@ contract ConicEthPoolTest is ConicPoolBaseTest {
         vm.prank(bb8);
         conicPool.withdraw(9 * 10 ** decimals, 1);
 
-        conicPool.removeCurvePool(curvePool);
-        address[] memory newPools = conicPool.allCurvePools();
+        conicPool.removePool(curvePool);
+        address[] memory newPools = conicPool.allPools();
         assertEq(newPools.length, pools.length - 1);
         for (uint256 i = 0; i < newPools.length; i++) {
             if (newPools[i] == curvePool) fail("pool not removed");
@@ -257,7 +257,7 @@ contract ConicEthPoolTest is ConicPoolBaseTest {
         underlying.approve(address(conicPool), 100 * 10 ** decimals);
         vm.prank(bb8);
         conicPool.deposit(10 * 10 ** decimals, 1, false);
-        address[] memory pools = conicPool.allCurvePools();
+        address[] memory pools = conicPool.allPools();
         address curvePool = pools[0];
 
         skip(14 days);
@@ -269,10 +269,10 @@ contract ConicEthPoolTest is ConicPoolBaseTest {
 
         vm.prank(bb8);
         conicPool.withdraw(9 * 10 ** decimals, 1);
-        conicPool.removeCurvePool(curvePool);
+        conicPool.removePool(curvePool);
 
-        conicPool.addCurvePool(curvePool);
-        address[] memory newPools = conicPool.allCurvePools();
+        conicPool.addPool(curvePool);
+        address[] memory newPools = conicPool.allPools();
         assertEq(newPools.length, pools.length);
         for (uint256 i = 0; i < newPools.length; i++) {
             for (uint256 j = 0; j < newPools.length; j++) {
@@ -372,6 +372,10 @@ contract ConicEthPoolTest is ConicPoolBaseTest {
             bb8
         );
         assertApproxEqRel(depositAmount_, lpReceived, 0.01e18);
+
+        uint256 balanceBeforeWithdraw = bb8.balance;
+        conicPool.unstakeAndWithdraw(lpReceived, 1, address(ethZap));
+        assertApproxEqRel(bb8.balance - balanceBeforeWithdraw, depositAmount_, 0.01e18);
     }
 
     function _checkAllocations() internal {

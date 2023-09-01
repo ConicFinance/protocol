@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 import "../interfaces/IController.sol";
 import "../interfaces/tokenomics/ILpTokenStaker.sol";
+import "../interfaces/IPoolAdapter.sol";
 import "../interfaces/vendor/IBooster.sol";
 
 contract Controller is IController, Ownable, Initializable {
@@ -20,6 +21,8 @@ contract Controller is IController, Ownable, Initializable {
     EnumerableSet.AddressSet internal _pauseManagers;
     EnumerableSet.AddressSet internal _multiDepositsWithdrawsWhitelist;
 
+    mapping(address => uint256) internal _minimumTaintedTransferAmount;
+
     address public immutable cncToken;
 
     address public override convexBooster = address(0xF403C135812408BFbE8713b5A23a04b3D48AAE31);
@@ -30,6 +33,9 @@ contract Controller is IController, Ownable, Initializable {
 
     IInflationManager public override inflationManager;
     ILpTokenStaker public override lpTokenStaker;
+
+    mapping(address => IPoolAdapter) internal _customPoolAdapters;
+    IPoolAdapter public override defaultPoolAdapter;
 
     uint256 public weightUpdateMinDelay;
 
@@ -135,6 +141,21 @@ contract Controller is IController, Ownable, Initializable {
         emit CurveRegistryCacheSet(curveRegistryCache_);
     }
 
+    function poolAdapterFor(address pool) external view override returns (IPoolAdapter) {
+        IPoolAdapter adapter = _customPoolAdapters[pool];
+        return address(adapter) == address(0) ? defaultPoolAdapter : adapter;
+    }
+
+    function setDefaultPoolAdapter(address poolAdapter) external override onlyOwner {
+        defaultPoolAdapter = IPoolAdapter(poolAdapter);
+        emit DefaultPoolAdapterSet(poolAdapter);
+    }
+
+    function setCustomPoolAdapter(address pool, address poolAdapter) external override onlyOwner {
+        _customPoolAdapters[pool] = IPoolAdapter(poolAdapter);
+        emit CustomPoolAdapterSet(pool, poolAdapter);
+    }
+
     function setWeightUpdateMinDelay(uint256 delay) external override onlyOwner {
         require(delay < _MAX_WEIGHT_UPDATE_MIN_DELAY, "delay too long");
         require(delay > _MIN_WEIGHT_UPDATE_MIN_DELAY, "delay too short");
@@ -155,7 +176,7 @@ contract Controller is IController, Ownable, Initializable {
         if (changed) emit PauseManagerSet(account, isManager);
     }
 
-    function allowMultipleDepositsWithdraws(address account, bool allowed) external onlyOwner {
+    function setAllowedMultipleDepositsWithdraws(address account, bool allowed) external onlyOwner {
         bool changed;
         if (allowed) changed = _multiDepositsWithdrawsWhitelist.add(account);
         else changed = _multiDepositsWithdrawsWhitelist.remove(account);
@@ -169,5 +190,17 @@ contract Controller is IController, Ownable, Initializable {
 
     function getMultipleDepositsWithdrawsWhitelist() external view returns (address[] memory) {
         return _multiDepositsWithdrawsWhitelist.values();
+    }
+
+    function setMinimumTaintedTransferAmount(
+        address token,
+        uint256 amount
+    ) external override onlyOwner {
+        _minimumTaintedTransferAmount[token] = amount;
+        emit MinimumTaintedTransferAmountSet(token, amount);
+    }
+
+    function getMinimumTaintedTransferAmount(address token) external view returns (uint256) {
+        return _minimumTaintedTransferAmount[token];
     }
 }

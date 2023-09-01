@@ -182,6 +182,16 @@ contract CurveRegistryCacheTest is ConicTest {
         assertEq(staker.poolLastUpdated(address(pool2)), block.timestamp);
     }
 
+    function testSetMinimumTaintedTransferAmount() public {
+        address lpToken = makeAddr("lp token");
+
+        vm.expectRevert("Ownable: caller is not the owner");
+        vm.prank(bb8);
+        controller.setMinimumTaintedTransferAmount(lpToken, 1e18);
+        controller.setMinimumTaintedTransferAmount(lpToken, 1e18);
+        assertEq(controller.getMinimumTaintedTransferAmount(lpToken), 1e18);
+    }
+
     function _createMockPool() internal returns (IConicPool) {
         MockErc20 erc20 = new MockErc20(18);
         return new MockPool(controller, address(erc20));

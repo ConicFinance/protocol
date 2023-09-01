@@ -5,7 +5,7 @@ import "./ConicPoolBaseTest.sol";
 import "../interfaces/vendor/IBooster.sol";
 import "../interfaces/IOracle.sol";
 
-contract ConicEthPoolTest is ConicPoolBaseTest {
+contract GenericOracleTest is ConicPoolBaseTest {
     IOracle public oracle;
 
     function setUp() public override {

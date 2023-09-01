@@ -28,10 +28,10 @@ contract ConicPoolTest is ConicPoolBaseTest {
             false
         );
 
-        controller.allowMultipleDepositsWithdraws(bb8, true);
+        controller.setAllowedMultipleDepositsWithdraws(bb8, true);
 
-        conicPool.addCurvePool(CurvePools.CRVUSD_USDT);
-        conicPool.addCurvePool(CurvePools.CRVUSD_USDC);
+        conicPool.addPool(CurvePools.CRVUSD_USDT);
+        conicPool.addPool(CurvePools.CRVUSD_USDC);
         IConicPool.PoolWeight[] memory weights = new IConicPool.PoolWeight[](2);
         weights[0] = IConicPool.PoolWeight(CurvePools.CRVUSD_USDT, 0.6e18);
         weights[1] = IConicPool.PoolWeight(CurvePools.CRVUSD_USDC, 0.4e18);
@@ -138,9 +138,9 @@ contract ConicPoolTest is ConicPoolBaseTest {
         );
 
         // Setting up pool including a v0 pool
-        conicPool.addCurvePool(CurvePools.FRAX_3CRV);
-        conicPool.addCurvePool(CurvePools.TRI_POOL);
-        conicPool.addCurvePool(CurvePools.SUSD_DAI_USDT_USDC);
+        conicPool.addPool(CurvePools.FRAX_3CRV);
+        conicPool.addPool(CurvePools.TRI_POOL);
+        conicPool.addPool(CurvePools.SUSD_DAI_USDT_USDC);
         IConicPool.PoolWeight[] memory newWeights = new IConicPool.PoolWeight[](3);
         newWeights[0] = IConicPool.PoolWeight(CurvePools.FRAX_3CRV, 0.6e18);
         newWeights[1] = IConicPool.PoolWeight(CurvePools.TRI_POOL, 0.3e18);
@@ -214,7 +214,7 @@ contract ConicPoolTest is ConicPoolBaseTest {
     }
 
     function testHandleInvalidConvexPid() public {
-        address[] memory pools = conicPool.allCurvePools();
+        address[] memory pools = conicPool.allPools();
         address curvePool = pools[0];
         vm.expectRevert("convex pool pid is shutdown");
         conicPool.handleInvalidConvexPid(curvePool);
@@ -238,7 +238,7 @@ contract ConicPoolTest is ConicPoolBaseTest {
     }
 
     function testHandleDepeggedPool() public {
-        address[] memory pools = conicPool.allCurvePools();
+        address[] memory pools = conicPool.allPools();
         address curvePool = pools[0];
         vm.expectRevert("pool is not depegged");
         conicPool.handleDepeggedCurvePool(curvePool);
@@ -261,11 +261,11 @@ contract ConicPoolTest is ConicPoolBaseTest {
         vm.prank(bb8);
         conicPool.deposit(10_000 * 10 ** decimals, 1, false);
 
-        address[] memory pools = conicPool.allCurvePools();
+        address[] memory pools = conicPool.allPools();
         address curvePool = pools[0];
 
-        vm.expectRevert("pool has funds");
-        conicPool.removeCurvePool(curvePool);
+        vm.expectRevert("pool has allocated funds");
+        conicPool.removePool(curvePool);
 
         skip(14 days);
 
@@ -277,8 +277,8 @@ contract ConicPoolTest is ConicPoolBaseTest {
         vm.prank(bb8);
         conicPool.withdraw(9_000 * 10 ** decimals, 1);
 
-        conicPool.removeCurvePool(curvePool);
-        address[] memory newPools = conicPool.allCurvePools();
+        conicPool.removePool(curvePool);
+        address[] memory newPools = conicPool.allPools();
         assertEq(newPools.length, pools.length - 1);
         for (uint256 i = 0; i < newPools.length; i++) {
             if (newPools[i] == curvePool) fail("pool not removed");
@@ -290,7 +290,7 @@ contract ConicPoolTest is ConicPoolBaseTest {
         underlying.approve(address(conicPool), 100_000 * 10 ** decimals);
         vm.prank(bb8);
         conicPool.deposit(10_000 * 10 ** decimals, 1, false);
-        address[] memory pools = conicPool.allCurvePools();
+        address[] memory pools = conicPool.allPools();
         address curvePool = pools[0];
 
         skip(14 days);
@@ -302,10 +302,10 @@ contract ConicPoolTest is ConicPoolBaseTest {
 
         vm.prank(bb8);
         conicPool.withdraw(9_000 * 10 ** decimals, 1);
-        conicPool.removeCurvePool(curvePool);
+        conicPool.removePool(curvePool);
 
-        conicPool.addCurvePool(curvePool);
-        address[] memory newPools = conicPool.allCurvePools();
+        conicPool.addPool(curvePool);
+        address[] memory newPools = conicPool.allPools();
         assertEq(newPools.length, pools.length);
         for (uint256 i = 0; i < newPools.length; i++) {
             for (uint256 j = 0; j < newPools.length; j++) {
@@ -433,6 +433,12 @@ contract ConicPoolTest is ConicPoolBaseTest {
         vm.prank(droid3);
         vm.expectRevert("cannot mint/burn twice in a block");
         conicPool.withdraw(1_000 * 10 ** decimals, 1);
+
+        // can execute action if below threshold
+        controller.setMinimumTaintedTransferAmount(address(lpToken), 10 * 10 ** decimals);
+        vm.prank(droid0);
+        uint256 withdrawn = conicPool.withdraw(10 * 10 ** decimals, 1);
+        assertGt(withdrawn, 0);
     }
 
     function _checkAllocations() internal {

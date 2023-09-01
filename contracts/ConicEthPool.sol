@@ -18,11 +18,12 @@ contract ConicEthPool is BaseConicPool {
     ) BaseConicPool(_underlying, _rewardManager, _controller, _lpTokenName, _symbol, _cvx, _crv) {}
 
     function _updatePriceCache() internal override {
-        uint256 length_ = _curvePools.length();
+        uint256 length_ = _pools.length();
         IOracle priceOracle_ = controller.priceOracle();
         uint256 ethUsdPrice_ = priceOracle_.getUSDPrice(address(0));
         for (uint256 i; i < length_; i++) {
-            address lpToken_ = controller.curveRegistryCache().lpToken(_curvePools.at(i));
+            address pool = _pools.at(i);
+            address lpToken_ = controller.poolAdapterFor(pool).lpToken(pool);
             uint256 priceInUsd_ = priceOracle_.getUSDPrice(lpToken_);
             uint256 priceInEth_ = priceInUsd_.divDown(ethUsdPrice_);
             _cachedPrices[lpToken_] = priceInEth_;
@@ -44,9 +45,9 @@ contract ConicEthPool is BaseConicPool {
     }
 
     function _sanityChecks() internal override {
-        for (uint256 i; i < _curvePools.length(); i++) {
-            address curvePool_ = _curvePools.at(i);
-            ICurveHandler(controller.curveHandler()).reentrancyCheck(curvePool_);
+        for (uint256 i; i < _pools.length(); i++) {
+            address pool_ = _pools.at(i);
+            controller.poolAdapterFor(pool_).executeSanityCheck(pool_);
         }
     }
 }
