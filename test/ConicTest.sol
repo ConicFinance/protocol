@@ -26,6 +26,7 @@ import "../contracts/oracles/GenericOracle.sol";
 import "../contracts/oracles/CurveLPOracle.sol";
 import "../contracts/oracles/ChainlinkOracle.sol";
 import "../contracts/oracles/CrvUsdOracle.sol";
+import "../contracts/tokenomics/Bonding.sol";
 import "../contracts/testing/MockErc20.sol";
 import "../interfaces/pools/IConicPool.sol";
 
@@ -326,6 +327,25 @@ contract ConicTest is Test {
         );
         controller.inflationManager().updatePoolWeights();
         return pool;
+    }
+
+    function _createBonding(
+        CNCLockerV2 locker,
+        Controller controller,
+        IConicPool crvusdPool,
+        uint256 _epochDuration,
+        uint256 _totalNumberEpochs,
+        uint256 _totalCncAmount
+    ) internal returns (Bonding) {
+        Bonding bonding = new Bonding(
+            address(locker),
+            address(controller),
+            address(crvusdPool),
+            _epochDuration,
+            _totalNumberEpochs,
+            _totalCncAmount
+        );
+        return bonding;
     }
 
     function setTokenBalance(address who, address token, uint256 amt) internal {
