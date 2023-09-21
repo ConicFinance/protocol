@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "../../interfaces/tokenomics/IBonding.sol";
 import "../../interfaces/tokenomics/ICNCLockerV2.sol";
+import "../../interfaces/tokenomics/IRewardManager.sol";
 import "../../interfaces/tokenomics/ILpTokenStaker.sol";
 import "../../interfaces/IController.sol";
 import "../../interfaces/IOracle.sol";
@@ -26,6 +27,7 @@ contract Bonding is IBonding, Ownable {
     IController public immutable controller;
     IConicPool public immutable crvUsdPool;
     IERC20 public immutable underlying;
+    address public debtPool;
 
     uint256 public immutable totalNumberEpochs;
     uint256 public immutable epochDuration;
@@ -34,9 +36,13 @@ contract Bonding is IBonding, Ownable {
     uint256 public cncStartPrice;
     uint256 public cncAvailable;
     uint256 public cncDistributed;
-    uint256 public epochStartTime;
+    uint256 public epochStartTime; // start time of the current epoch
     uint256 public lastCncPrice;
     uint256 public epochPriceIncreaseFactor;
+
+    mapping(uint256 => uint256) public assetsInEpoch;
+    uint256 public lastStreamUpdate; // last update for asset streaming
+    uint256 public lastStreamEpochStartTime;
 
     constructor(
         address _cncLocker,
@@ -65,9 +71,14 @@ contract Bonding is IBonding, Ownable {
     }
 
     function setCncPriceIncreaseFactor(uint256 _priceIncreaseFactor) external override onlyOwner {
-        require(_priceIncreaseFactor > MIN_PRICE_INCREASE_FACTOR, "Increase factor too low.");
+        require(_priceIncreaseFactor >= MIN_PRICE_INCREASE_FACTOR, "Increase factor too low.");
         epochPriceIncreaseFactor = _priceIncreaseFactor;
         emit PriceIncreaseFactorSet(_priceIncreaseFactor);
+    }
+
+    function setDebtPool(address _debtPool) external override onlyOwner {
+        debtPool = _debtPool;
+        emit DebtPoolSet(_priceIncreaseFactor);
     }
 
     function bondCrvUsd(
@@ -79,7 +90,7 @@ contract Bonding is IBonding, Ownable {
         uint256 currentCncBondPrice = computeCurrentCncBondPrice();
         uint256 cncToReceive = valueInUSD.divDown(currentCncBondPrice);
 
-        updateAvailableCncAndStartPrice();
+        _updateAvailableCncAndStartPrice();
         require(
             cncToReceive + cncDistributed <= cncAvailable,
             "Not enough CNC currently available"
@@ -91,6 +102,10 @@ contract Bonding is IBonding, Ownable {
         ILpTokenStaker lpTokenStaker = controller.lpTokenStaker();
         lpTokenStaker.stake(lpTokenAmount, address(crvUsdPool));
 
+        // Schedule assets for streaming in the next epoch
+        uint256 nextEpochStartTime = epochStartTime + epochDuration;
+        assetsInEpoch[nextEpochStartTime] += lpTokenAmount;
+
         cncDistributed += cncToReceive;
         cncLocker.lockFor(cncToReceive, cncLockTime, false, msg.sender);
 
@@ -101,13 +116,36 @@ contract Bonding is IBonding, Ownable {
         emit Bonded(msg.sender, lpTokenAmount, cncToReceive, cncLockTime);
     }
 
+    function claimFeesForDebtPool() external override {
+        IRewardManager rewardManager = crvUsdPool.rewardManager();
+        // TODO: Add accounting etc. here
+        rewardManager.claimEarnings();
+    }
+
+    function _updateStreamed() internal returns (uint256) {
+        uint256 streamed;
+        uint256 streamedInEpoch;
+        while (block.timestamp > lastStreamEpochStartTime + epochDuration) {
+            streamedInEpoch = (lastStreamEpochStartTime + epochDuration - lastStreamUpdate)
+                .divDown(epochDuration)
+                .mulDown(assetsInEpoch[lastStreamEpochStartTime]);
+            lastStreamEpochStartTime += epochDuration;
+            lastStreamUpdate = lastStreamEpochStartTime;
+            streamed += streamedInEpoch;
+        }
+        streamed += (block.timestamp - lastStreamUpdate).divDown(epochDuration).mulDown(
+            assetsInEpoch[lastStreamEpochStartTime]
+        );
+        return streamed;
+    }
+
     function computeCurrentCncBondPrice() public view override returns (uint256) {
         uint256 discountFactor = ScaledMath.ONE -
             (block.timestamp - epochStartTime).divDown(epochDuration);
         return cncStartPrice.mulDown(discountFactor);
     }
 
-    function updateAvailableCncAndStartPrice() internal {
+    function _updateAvailableCncAndStartPrice() internal {
         bool priceUpdated;
         while (block.timestamp > epochStartTime + epochDuration) {
             cncAvailable += cncPerEpoch;

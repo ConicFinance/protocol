@@ -36,6 +36,8 @@ contract BondingTest is ConicPoolBaseTest {
         _setWeights(address(crvusdPool), weights);
 
         bonding = _createBonding(locker, controller, crvusdPool, 7 days, 52, 100_000e18);
+        bonding.setCncStartPrice(2e18);
+        bonding.setCncPriceIncreaseFactor(5e17);
     }
 
     function testInitialState() public {
