@@ -9,6 +9,7 @@ import "../interfaces/IController.sol";
 import "../interfaces/tokenomics/ILpTokenStaker.sol";
 import "../interfaces/IPoolAdapter.sol";
 import "../interfaces/vendor/IBooster.sol";
+import "../interfaces/tokenomics/IBonding.sol";
 
 contract Controller is IController, Ownable, Initializable {
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -33,6 +34,7 @@ contract Controller is IController, Ownable, Initializable {
 
     IInflationManager public override inflationManager;
     ILpTokenStaker public override lpTokenStaker;
+    IBonding public override bonding;
 
     mapping(address => IPoolAdapter) internal _customPoolAdapters;
     IPoolAdapter public override defaultPoolAdapter;
@@ -154,6 +156,11 @@ contract Controller is IController, Ownable, Initializable {
     function setCustomPoolAdapter(address pool, address poolAdapter) external override onlyOwner {
         _customPoolAdapters[pool] = IPoolAdapter(poolAdapter);
         emit CustomPoolAdapterSet(pool, poolAdapter);
+    }
+
+    function setBonding(address _bonding) external override onlyOwner {
+        bonding = IBonding(_bonding);
+        emit BondingSet(_bonding);
     }
 
     function setWeightUpdateMinDelay(uint256 delay) external override onlyOwner {

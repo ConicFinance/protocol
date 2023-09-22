@@ -27,7 +27,7 @@ def main():
         RewardManager,
         get_mainnet_address("Controller"),
         config["underlying"],
-        get_mainnet_address("CNCLockerV2"),
+        get_mainnet_address("CNCLockerV3"),
         gas_price=GAS_PRICE,
     )
 

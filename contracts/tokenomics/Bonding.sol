@@ -6,8 +6,8 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "../../interfaces/tokenomics/IBonding.sol";
-import "../../interfaces/tokenomics/ICNCLockerV2.sol";
-import "../../interfaces/tokenomics/IRewardManager.sol";
+import "../../interfaces/tokenomics/ICNCLockerV3.sol";
+import "../../interfaces/pools/IRewardManager.sol";
 import "../../interfaces/tokenomics/ILpTokenStaker.sol";
 import "../../interfaces/IController.sol";
 import "../../interfaces/IOracle.sol";
@@ -19,11 +19,15 @@ contract Bonding is IBonding, Ownable {
     using ScaledMath for uint256;
     using SafeERC20 for IERC20;
 
+    IERC20 public constant CVX = IERC20(0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B);
+    IERC20 public constant CRV = IERC20(0xD533a949740bb3306d119CC777fa900bA034cd52);
+    IERC20 public constant CNC = IERC20(0x9aE380F0272E2162340a5bB646c354271c0F5cFC);
+
     uint256 public constant MIN_CNC_START_PRICE = 1e18;
     uint256 public constant MAX_CNC_START_PRICE = 20e18;
     uint256 public constant MIN_PRICE_INCREASE_FACTOR = 5e17;
 
-    ICNCLockerV2 public immutable cncLocker;
+    ICNCLockerV3 public immutable cncLocker;
     IController public immutable controller;
     IConicPool public immutable crvUsdPool;
     IERC20 public immutable underlying;
@@ -44,6 +48,10 @@ contract Bonding is IBonding, Ownable {
     uint256 public lastStreamUpdate; // last update for asset streaming
     uint256 public lastStreamEpochStartTime;
 
+    mapping(address => uint256) public perAccountStreamIntegral;
+    mapping(address => uint256) public perAccountStreamAccrued;
+    uint256 public streamIntegral;
+
     constructor(
         address _cncLocker,
         address _controller,
@@ -52,7 +60,7 @@ contract Bonding is IBonding, Ownable {
         uint256 _totalNumberEpochs,
         uint256 _totalCncAmount
     ) {
-        cncLocker = ICNCLockerV2(_cncLocker);
+        cncLocker = ICNCLockerV3(_cncLocker);
         controller = IController(_controller);
         crvUsdPool = IConicPool(_crvUsdPool);
         underlying = crvUsdPool.underlying();
@@ -78,7 +86,7 @@ contract Bonding is IBonding, Ownable {
 
     function setDebtPool(address _debtPool) external override onlyOwner {
         debtPool = _debtPool;
-        emit DebtPoolSet(_priceIncreaseFactor);
+        emit DebtPoolSet(_debtPool);
     }
 
     function bondCrvUsd(
@@ -118,8 +126,41 @@ contract Bonding is IBonding, Ownable {
 
     function claimFeesForDebtPool() external override {
         IRewardManager rewardManager = crvUsdPool.rewardManager();
-        // TODO: Add accounting etc. here
         rewardManager.claimEarnings();
+        CRV.approve(debtPool, CRV.balanceOf(address(this)));
+        CVX.approve(debtPool, CVX.balanceOf(address(this)));
+        // TODO: Register transfer with debt pool
+    }
+
+    function claimStream() external override {
+        checkpointAccount(msg.sender);
+        IERC20 lpToken = IERC20(crvUsdPool.lpToken());
+        uint256 amount = perAccountStreamAccrued[msg.sender];
+        ILpTokenStaker lpTokenStaker = controller.lpTokenStaker();
+        lpTokenStaker.unstake(amount, address(crvUsdPool));
+        lpToken.safeTransfer(msg.sender, amount);
+        perAccountStreamAccrued[msg.sender] = 0;
+        emit StreamClaimed(msg.sender, amount);
+    }
+
+    function streamCheckpoint() public override {
+        uint256 streamed = _updateStreamed();
+        streamIntegral += streamed.divDown(cncLocker.totalBoosted());
+    }
+
+    function checkpointAccount(address account) public override {
+        streamCheckpoint();
+        uint256 accountBoostedBalance = cncLocker.totalRewardsBoost(account);
+        perAccountStreamAccrued[account] += accountBoostedBalance.mulDown(
+            streamIntegral - perAccountStreamIntegral[account]
+        );
+        perAccountStreamIntegral[account] = streamIntegral;
+    }
+
+    function computeCurrentCncBondPrice() public view override returns (uint256) {
+        uint256 discountFactor = ScaledMath.ONE -
+            (block.timestamp - epochStartTime).divDown(epochDuration);
+        return cncStartPrice.mulDown(discountFactor);
     }
 
     function _updateStreamed() internal returns (uint256) {
@@ -137,12 +178,6 @@ contract Bonding is IBonding, Ownable {
             assetsInEpoch[lastStreamEpochStartTime]
         );
         return streamed;
-    }
-
-    function computeCurrentCncBondPrice() public view override returns (uint256) {
-        uint256 discountFactor = ScaledMath.ONE -
-            (block.timestamp - epochStartTime).divDown(epochDuration);
-        return cncStartPrice.mulDown(discountFactor);
     }
 
     function _updateAvailableCncAndStartPrice() internal {

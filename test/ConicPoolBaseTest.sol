@@ -6,7 +6,7 @@ import "../interfaces/vendor/IBooster.sol";
 
 contract ConicPoolBaseTest is ConicTest {
     Controller public controller;
-    CNCLockerV2 public locker;
+    CNCLockerV3 public locker;
     CNCMintingRebalancingRewardsHandler public rewardsHandler;
     IInflationManager public inflationManager;
     ILpTokenStaker public lpTokenStaker;

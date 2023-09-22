@@ -6,12 +6,12 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "../../libraries/ScaledMath.sol";
-import "../../interfaces/tokenomics/ICNCLockerV2.sol";
+import "../../interfaces/tokenomics/ICNCLockerV3.sol";
 import "../../interfaces/tokenomics/ICNCToken.sol";
 import "../../interfaces/tokenomics/ICNCVoteLocker.sol";
 import "../../interfaces/IController.sol";
 
-contract CNCLockerV2 is ICNCLockerV2, Ownable {
+contract CNCLockerV3 is ICNCLockerV3, Ownable {
     using SafeERC20 for ICNCToken;
     using SafeERC20 for IERC20;
     using ScaledMath for uint256;
@@ -405,6 +405,10 @@ contract CNCLockerV2 is ICNCLockerV2, Ownable {
             accruedFeesIntegralCvx - perAccountAccruedCvx[account]
         );
         perAccountAccruedCvx[account] = accruedFeesIntegralCvx;
+
+        // bonding stream
+        IBonding bonding = controller.bonding();
+        bonding.checkpointAccount(account);
     }
 
     function computeBoost(uint128 lockTime) public pure override returns (uint128) {

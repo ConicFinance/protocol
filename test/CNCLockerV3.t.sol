@@ -2,13 +2,15 @@
 pragma solidity 0.8.17;
 
 import "./ConicTest.sol";
-import "../contracts/tokenomics/CNCLockerV2Wrapper.sol";
+import "../contracts/tokenomics/CNCLockerV3Wrapper.sol";
+import "../contracts/testing/MockBonding.sol";
+import "../interfaces/tokenomics/IBonding.sol";
 
-contract CNCLockerV2Test is ConicTest {
+contract CNCLockerV3Test is ConicTest {
     event Locked(address indexed account, uint256 amount, uint256 unlockTime, bool relocked);
 
     Controller public controller;
-    CNCLockerV2 public locker;
+    CNCLockerV3 public locker;
     CNCToken public cnc;
 
     function setUp() public override {
@@ -26,6 +28,9 @@ contract CNCLockerV2Test is ConicTest {
             abi.encodeWithSelector(IERC20.balanceOf.selector),
             abi.encode(0)
         );
+
+        IBonding bonding = new MockBonding();
+        controller.setBonding(address(bonding));
     }
 
     function testInitialState() public {
@@ -42,7 +47,7 @@ contract CNCLockerV2Test is ConicTest {
         assertEq(locker.balanceOf(bb8), 1_000e18);
         assertEq(cnc.balanceOf(address(locker)), 1_000e18);
         assertEq(cnc.balanceOf(bb8), 99_000e18);
-        CNCLockerV2.VoteLock[] memory locks = locker.userLocks(bb8);
+        CNCLockerV3.VoteLock[] memory locks = locker.userLocks(bb8);
         assertEq(locks.length, 1);
         assertEq(locks[0].amount, 1_000e18);
         assertEq(locks[0].unlockTime, block.timestamp + 120 days);
@@ -51,7 +56,7 @@ contract CNCLockerV2Test is ConicTest {
 
     function testLockerWrapper() public {
         Controller newController = _createAndInitializeController();
-        CNCLockerV2Wrapper wrapper = new CNCLockerV2Wrapper(newController, locker);
+        CNCLockerV3Wrapper wrapper = new CNCLockerV3Wrapper(newController, locker);
         vm.startPrank(bb8);
         locker.lock(1_000e18, 120 days);
         assertEq(wrapper.balanceOf(bb8), 1_000e18);
@@ -88,7 +93,7 @@ contract CNCLockerV2Test is ConicTest {
         assertEq(locker.unlockableBalance(bb8), 0);
         assertEq(locker.totalLocked(), 13_000e18);
 
-        CNCLockerV2.VoteLock[] memory locks = locker.userLocks(bb8);
+        CNCLockerV3.VoteLock[] memory locks = locker.userLocks(bb8);
         assertEq(locks.length, 3);
         assertEq(locks[0].unlockTime, block.timestamp + 70 days);
         assertEq(locks[1].unlockTime, block.timestamp + 170 days);
@@ -102,7 +107,7 @@ contract CNCLockerV2Test is ConicTest {
 
         locker.lock(2_000e18, 200 days, true);
         assertEq(locker.totalLocked(), 3_000e18);
-        CNCLockerV2.VoteLock[] memory locks = locker.userLocks(bb8);
+        CNCLockerV3.VoteLock[] memory locks = locker.userLocks(bb8);
         assertEq(locks.length, 1);
         assertEq(locks[0].unlockTime, block.timestamp + 200 days);
 

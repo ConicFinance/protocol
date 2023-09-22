@@ -2,17 +2,17 @@
 pragma solidity 0.8.17;
 
 import "../../interfaces/IController.sol";
-import "../../interfaces/tokenomics/ICNCLockerV2.sol";
-import "../../interfaces/tokenomics/ICNCLockerV2Wrapper.sol";
+import "../../interfaces/tokenomics/ICNCLockerV3.sol";
+import "../../interfaces/tokenomics/ICNCLockerV3Wrapper.sol";
 import "../../libraries/ScaledMath.sol";
 
-contract CNCLockerV2Wrapper is ICNCLockerV2Wrapper {
+contract CNCLockerV3Wrapper is ICNCLockerV3Wrapper {
     using ScaledMath for uint256;
 
     IController public immutable controller;
-    ICNCLockerV2 public immutable locker;
+    ICNCLockerV3 public immutable locker;
 
-    constructor(IController _controller, ICNCLockerV2 _locker) {
+    constructor(IController _controller, ICNCLockerV3 _locker) {
         controller = _controller;
         locker = _locker;
     }
