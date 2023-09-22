@@ -4,6 +4,8 @@ pragma solidity 0.8.17;
 import "../../interfaces/tokenomics/IBonding.sol";
 
 contract MockBonding is IBonding {
+    function startBonding() external override {}
+
     function setCncStartPrice(uint256 _cncStartPrice) external override {}
 
     function setCncPriceIncreaseFactor(uint256 _priceIncreaseFactor) external override {}
@@ -15,8 +17,6 @@ contract MockBonding is IBonding {
         uint256 minCncReceived,
         uint64 cncLockTime
     ) external override {}
-
-    function claimFeesForDebtPool() external override {}
 
     function claimStream() external override {}
 

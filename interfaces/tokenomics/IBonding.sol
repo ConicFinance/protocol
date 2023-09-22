@@ -13,6 +13,9 @@ interface IBonding {
     event DebtPoolSet(address indexed pool);
     event DebtPoolFeesClaimed(address indexed pool, uint256 amount);
     event StreamClaimed(address indexed account, uint256 amount);
+    event BondingStarted(uint256 amount, uint256 epochs);
+
+    function startBonding() external;
 
     function setCncStartPrice(uint256 _cncStartPrice) external;
 
@@ -21,8 +24,6 @@ interface IBonding {
     function setDebtPool(address _debtPool) external;
 
     function bondCrvUsd(uint256 lpTokenAmount, uint256 minCncReceived, uint64 cncLockTime) external;
-
-    function claimFeesForDebtPool() external;
 
     function claimStream() external;
 

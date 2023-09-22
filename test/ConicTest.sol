@@ -334,16 +334,14 @@ contract ConicTest is Test {
         Controller controller,
         IConicPool crvusdPool,
         uint256 _epochDuration,
-        uint256 _totalNumberEpochs,
-        uint256 _totalCncAmount
+        uint256 _totalNumberEpochs
     ) internal returns (Bonding) {
         Bonding bonding = new Bonding(
             address(locker),
             address(controller),
             address(crvusdPool),
             _epochDuration,
-            _totalNumberEpochs,
-            _totalCncAmount
+            _totalNumberEpochs
         );
         return bonding;
     }

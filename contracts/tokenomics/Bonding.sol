@@ -15,6 +15,7 @@ import "../../interfaces/pools/IConicPool.sol";
 
 import "../../libraries/ScaledMath.sol";
 
+// TODO: Implement an enforcement for ending the bonding
 contract Bonding is IBonding, Ownable {
     using ScaledMath for uint256;
     using SafeERC20 for IERC20;
@@ -35,7 +36,8 @@ contract Bonding is IBonding, Ownable {
 
     uint256 public immutable totalNumberEpochs;
     uint256 public immutable epochDuration;
-    uint256 public immutable cncPerEpoch;
+    uint256 public cncPerEpoch;
+    bool public bondingStarted;
 
     uint256 public cncStartPrice;
     uint256 public cncAvailable;
@@ -57,8 +59,7 @@ contract Bonding is IBonding, Ownable {
         address _controller,
         address _crvUsdPool,
         uint256 _epochDuration,
-        uint256 _totalNumberEpochs,
-        uint256 _totalCncAmount
+        uint256 _totalNumberEpochs
     ) {
         cncLocker = ICNCLockerV3(_cncLocker);
         controller = IController(_controller);
@@ -66,7 +67,22 @@ contract Bonding is IBonding, Ownable {
         underlying = crvUsdPool.underlying();
         totalNumberEpochs = _totalNumberEpochs;
         epochDuration = _epochDuration;
-        cncPerEpoch = _totalCncAmount.divDown(_totalNumberEpochs);
+    }
+
+    function startBonding() external override onlyOwner {
+        require(!bondingStarted, "bonding already started");
+        uint256 cncBalance = CNC.balanceOf(address(this));
+        require(cncBalance > 0, "No CNC balance to bond with");
+
+        cncPerEpoch = cncBalance / totalNumberEpochs;
+
+        lastStreamEpochStartTime = block.timestamp;
+        lastStreamUpdate = block.timestamp;
+        epochStartTime = block.timestamp;
+
+        bondingStarted = true;
+        cncAvailable = cncPerEpoch;
+        emit BondingStarted(cncBalance, totalNumberEpochs);
     }
 
     function setCncStartPrice(uint256 _cncStartPrice) external override onlyOwner {
@@ -75,6 +91,7 @@ contract Bonding is IBonding, Ownable {
             "CNC start price not within permitted range"
         );
         cncStartPrice = _cncStartPrice;
+        lastCncPrice = _cncStartPrice;
         emit CncStartPriceSet(_cncStartPrice);
     }
 
@@ -94,11 +111,12 @@ contract Bonding is IBonding, Ownable {
         uint256 minCncReceived,
         uint64 cncLockTime
     ) external override {
+        if (!bondingStarted) return;
+        _updateAvailableCncAndStartPrice();
         uint256 valueInUSD = _computeLpTokenValueInUsd(lpTokenAmount);
         uint256 currentCncBondPrice = computeCurrentCncBondPrice();
         uint256 cncToReceive = valueInUSD.divDown(currentCncBondPrice);
 
-        _updateAvailableCncAndStartPrice();
         require(
             cncToReceive + cncDistributed <= cncAvailable,
             "Not enough CNC currently available"
@@ -108,13 +126,13 @@ contract Bonding is IBonding, Ownable {
         IERC20 lpToken = IERC20(crvUsdPool.lpToken());
         lpToken.safeTransferFrom(msg.sender, address(this), lpTokenAmount);
         ILpTokenStaker lpTokenStaker = controller.lpTokenStaker();
+        lpToken.approve(address(lpTokenStaker), lpTokenAmount);
         lpTokenStaker.stake(lpTokenAmount, address(crvUsdPool));
-
         // Schedule assets for streaming in the next epoch
-        uint256 nextEpochStartTime = epochStartTime + epochDuration;
-        assetsInEpoch[nextEpochStartTime] += lpTokenAmount;
+        assetsInEpoch[epochStartTime + epochDuration] += lpTokenAmount;
 
         cncDistributed += cncToReceive;
+        CNC.approve(address(cncLocker), cncToReceive);
         cncLocker.lockFor(cncToReceive, cncLockTime, false, msg.sender);
 
         lastCncPrice = currentCncBondPrice < MIN_CNC_START_PRICE
@@ -124,15 +142,8 @@ contract Bonding is IBonding, Ownable {
         emit Bonded(msg.sender, lpTokenAmount, cncToReceive, cncLockTime);
     }
 
-    function claimFeesForDebtPool() external override {
-        IRewardManager rewardManager = crvUsdPool.rewardManager();
-        rewardManager.claimEarnings();
-        CRV.approve(debtPool, CRV.balanceOf(address(this)));
-        CVX.approve(debtPool, CVX.balanceOf(address(this)));
-        // TODO: Register transfer with debt pool
-    }
-
     function claimStream() external override {
+        if (!bondingStarted) return;
         checkpointAccount(msg.sender);
         IERC20 lpToken = IERC20(crvUsdPool.lpToken());
         uint256 amount = perAccountStreamAccrued[msg.sender];
@@ -144,11 +155,17 @@ contract Bonding is IBonding, Ownable {
     }
 
     function streamCheckpoint() public override {
+        if (!bondingStarted) return;
+
         uint256 streamed = _updateStreamed();
-        streamIntegral += streamed.divDown(cncLocker.totalBoosted());
+        uint256 totalBoosted = cncLocker.totalBoosted();
+        if (totalBoosted > 0) {
+            streamIntegral += streamed.divDown(totalBoosted);
+        }
     }
 
     function checkpointAccount(address account) public override {
+        if (!bondingStarted) return;
         streamCheckpoint();
         uint256 accountBoostedBalance = cncLocker.totalRewardsBoost(account);
         perAccountStreamAccrued[account] += accountBoostedBalance.mulDown(
@@ -166,7 +183,7 @@ contract Bonding is IBonding, Ownable {
     function _updateStreamed() internal returns (uint256) {
         uint256 streamed;
         uint256 streamedInEpoch;
-        while (block.timestamp > lastStreamEpochStartTime + epochDuration) {
+        while (block.timestamp >= lastStreamEpochStartTime + epochDuration) {
             streamedInEpoch = (lastStreamEpochStartTime + epochDuration - lastStreamUpdate)
                 .divDown(epochDuration)
                 .mulDown(assetsInEpoch[lastStreamEpochStartTime]);
@@ -177,12 +194,13 @@ contract Bonding is IBonding, Ownable {
         streamed += (block.timestamp - lastStreamUpdate).divDown(epochDuration).mulDown(
             assetsInEpoch[lastStreamEpochStartTime]
         );
+        lastStreamUpdate = block.timestamp;
         return streamed;
     }
 
     function _updateAvailableCncAndStartPrice() internal {
         bool priceUpdated;
-        while (block.timestamp > epochStartTime + epochDuration) {
+        while (block.timestamp >= epochStartTime + epochDuration) {
             cncAvailable += cncPerEpoch;
             epochStartTime += epochDuration;
             if (!priceUpdated) {
