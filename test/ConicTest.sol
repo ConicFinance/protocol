@@ -339,6 +339,7 @@ contract ConicTest is Test {
         Bonding bonding = new Bonding(
             address(locker),
             address(controller),
+            MainnetAddresses.MULTISIG,
             address(crvusdPool),
             _epochDuration,
             _totalNumberEpochs

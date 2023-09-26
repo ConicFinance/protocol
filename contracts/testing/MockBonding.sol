@@ -18,6 +18,8 @@ contract MockBonding is IBonding {
         uint64 cncLockTime
     ) external override {}
 
+    function recoverRemainingCNC() external override {}
+
     function claimStream() external override {}
 
     function streamCheckpoint() external override {}

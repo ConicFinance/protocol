@@ -15,7 +15,6 @@ import "../../interfaces/pools/IConicPool.sol";
 
 import "../../libraries/ScaledMath.sol";
 
-// TODO: Implement an enforcement for ending the bonding
 contract Bonding is IBonding, Ownable {
     using ScaledMath for uint256;
     using SafeERC20 for IERC20;
@@ -32,12 +31,15 @@ contract Bonding is IBonding, Ownable {
     IController public immutable controller;
     IConicPool public immutable crvUsdPool;
     IERC20 public immutable underlying;
+    address public immutable treasury;
+
     address public debtPool;
 
     uint256 public immutable totalNumberEpochs;
     uint256 public immutable epochDuration;
     uint256 public cncPerEpoch;
     bool public bondingStarted;
+    uint256 public bondingEndTime;
 
     uint256 public cncStartPrice;
     uint256 public cncAvailable;
@@ -57,12 +59,14 @@ contract Bonding is IBonding, Ownable {
     constructor(
         address _cncLocker,
         address _controller,
+        address _treasury,
         address _crvUsdPool,
         uint256 _epochDuration,
         uint256 _totalNumberEpochs
     ) {
         cncLocker = ICNCLockerV3(_cncLocker);
         controller = IController(_controller);
+        treasury = _treasury;
         crvUsdPool = IConicPool(_crvUsdPool);
         underlying = crvUsdPool.underlying();
         totalNumberEpochs = _totalNumberEpochs;
@@ -79,6 +83,7 @@ contract Bonding is IBonding, Ownable {
         lastStreamEpochStartTime = block.timestamp;
         lastStreamUpdate = block.timestamp;
         epochStartTime = block.timestamp;
+        bondingEndTime = block.timestamp + epochDuration * totalNumberEpochs;
 
         bondingStarted = true;
         cncAvailable = cncPerEpoch;
@@ -112,6 +117,7 @@ contract Bonding is IBonding, Ownable {
         uint64 cncLockTime
     ) external override {
         if (!bondingStarted) return;
+        require(block.timestamp <= bondingEndTime, "Bonding has ended");
         _updateAvailableCncAndStartPrice();
         uint256 valueInUSD = _computeLpTokenValueInUsd(lpTokenAmount);
         uint256 currentCncBondPrice = computeCurrentCncBondPrice();
@@ -154,6 +160,13 @@ contract Bonding is IBonding, Ownable {
         emit StreamClaimed(msg.sender, amount);
     }
 
+    function recoverRemainingCNC() external override onlyOwner {
+        require(block.timestamp > bondingEndTime, "Bonding has not yet ended");
+        uint256 amount = CNC.balanceOf(address(this));
+        CNC.safeTransfer(treasury, amount);
+        emit RemainingCNCRecovered(amount);
+    }
+
     function streamCheckpoint() public override {
         if (!bondingStarted) return;
 
@@ -183,7 +196,10 @@ contract Bonding is IBonding, Ownable {
     function _updateStreamed() internal returns (uint256) {
         uint256 streamed;
         uint256 streamedInEpoch;
-        while (block.timestamp >= lastStreamEpochStartTime + epochDuration) {
+        while (
+            (block.timestamp >= lastStreamEpochStartTime + epochDuration) &&
+            (lastStreamEpochStartTime < bondingEndTime + epochDuration)
+        ) {
             streamedInEpoch = (lastStreamEpochStartTime + epochDuration - lastStreamUpdate)
                 .divDown(epochDuration)
                 .mulDown(assetsInEpoch[lastStreamEpochStartTime]);
