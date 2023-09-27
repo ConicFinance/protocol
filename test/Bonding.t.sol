@@ -83,7 +83,7 @@ contract BondingTest is ConicPoolBaseTest {
         assertApproxEqRel(10_000 * 10 ** decimals, lpReceived, 0.01e18);
         crvusdPool.lpToken().approve(address(bonding), 10_000 * 10 ** decimals);
 
-        bonding.bondCrvUsd(1_000 * 10 ** decimals, 490e18, 180 days);
+        bonding.bondCncCrvUsd(1_000 * 10 ** decimals, 490e18, 180 days);
 
         uint256 cncReceived = cnc.balanceOf(address(locker));
         uint256 crvUsdReceived = lpTokenStaker.getUserBalanceForPool(
@@ -114,7 +114,7 @@ contract BondingTest is ConicPoolBaseTest {
         crvusdPool.lpToken().approve(address(bonding), 10_000 * 10 ** decimals);
 
         uint256 expectedCncReceived = 333e18;
-        bonding.bondCrvUsd(1_000 * 10 ** decimals, expectedCncReceived - 5e18, 180 days);
+        bonding.bondCncCrvUsd(1_000 * 10 ** decimals, expectedCncReceived - 5e18, 180 days);
 
         uint256 cncReceived = cnc.balanceOf(address(locker));
         uint256 crvUsdReceived = lpTokenStaker.getUserBalanceForPool(
@@ -139,7 +139,7 @@ contract BondingTest is ConicPoolBaseTest {
         assertApproxEqRel(10_000 * 10 ** decimals, lpReceived, 0.01e18);
         crvusdPool.lpToken().approve(address(bonding), 10_000 * 10 ** decimals);
 
-        bonding.bondCrvUsd(1_000 * 10 ** decimals, 490e18, 180 days);
+        bonding.bondCncCrvUsd(1_000 * 10 ** decimals, 490e18, 180 days);
 
         assertApproxEqRel(
             bonding.assetsInEpoch(bonding.epochStartTime() + bonding.epochDuration()),
@@ -183,7 +183,7 @@ contract BondingTest is ConicPoolBaseTest {
         uint256 lpReceived = crvusdPool.lpToken().balanceOf(bb8);
         // bond crvusd
         crvusdPool.lpToken().approve(address(bonding), 10_000 * 10 ** decimals);
-        bonding.bondCrvUsd(1_000 * 10 ** decimals, 490e18, 180 days);
+        bonding.bondCncCrvUsd(1_000 * 10 ** decimals, 490e18, 180 days);
         uint256 cncReceived = cnc.balanceOf(address(locker));
         uint256 crvUsdBalance = lpTokenStaker.getUserBalanceForPool(
             address(crvusdPool),
@@ -199,7 +199,7 @@ contract BondingTest is ConicPoolBaseTest {
             1000e18,
             0.01e18
         );
-
+        vm.stopPrank();
         vm.startPrank(address(c3po));
         // get LP tokens and don't stake
         underlying.approve(address(crvusdPool), 100_000 * 10 ** decimals);
@@ -207,7 +207,7 @@ contract BondingTest is ConicPoolBaseTest {
         lpReceived = crvusdPool.lpToken().balanceOf(bb8);
         // bond crvusd
         crvusdPool.lpToken().approve(address(bonding), 10_000 * 10 ** decimals);
-        bonding.bondCrvUsd(500 * 10 ** decimals, 245e18, 180 days);
+        bonding.bondCncCrvUsd(500 * 10 ** decimals, 245e18, 180 days);
         cncReceived = cnc.balanceOf(address(locker));
         crvUsdBalance = lpTokenStaker.getUserBalanceForPool(address(crvusdPool), address(bonding));
         assertApproxEqRel(cncReceived, 750e18, 0.01e18);
@@ -231,6 +231,7 @@ contract BondingTest is ConicPoolBaseTest {
         crvusdPool.deposit(10_000 * 10 ** decimals, 1, false);
         crvusdPool.lpToken().approve(address(bonding), 10_000 * 10 ** decimals);
 
+        vm.stopPrank();
         vm.startPrank(address(c3po));
         // get LP tokens and don't stake
         underlying.approve(address(crvusdPool), 100_000 * 10 ** decimals);
@@ -238,8 +239,9 @@ contract BondingTest is ConicPoolBaseTest {
         crvusdPool.lpToken().approve(address(bonding), 10_000 * 10 ** decimals);
 
         // First bonding in epoch 1
+        vm.stopPrank();
         vm.startPrank(address(bb8));
-        bonding.bondCrvUsd(1_000 * 10 ** decimals, 490e18, 180 days);
+        bonding.bondCncCrvUsd(1_000 * 10 ** decimals, 490e18, 180 days);
         assertApproxEqRel(
             bonding.assetsInEpoch(bonding.epochStartTime() + bonding.epochDuration()),
             1000e18,
@@ -248,8 +250,9 @@ contract BondingTest is ConicPoolBaseTest {
         skip(10.5 days);
 
         // Second bonding in epoch 2
+        vm.stopPrank();
         vm.startPrank(address(c3po));
-        bonding.bondCrvUsd(1000 * 10 ** decimals, 240e18, 180 days);
+        bonding.bondCncCrvUsd(1000 * 10 ** decimals, 240e18, 180 days);
         assertApproxEqRel(
             bonding.assetsInEpoch(bonding.epochStartTime() + bonding.epochDuration()),
             1000e18,
@@ -259,7 +262,7 @@ contract BondingTest is ConicPoolBaseTest {
         skip(10.5 days);
 
         // Claiming in epoch 4
-
+        vm.stopPrank();
         vm.startPrank(address(bb8));
         uint256 balanceBefore = crvusdPool.lpToken().balanceOf(address(bb8));
         bonding.claimStream();
@@ -269,6 +272,7 @@ contract BondingTest is ConicPoolBaseTest {
             0.01e18
         );
 
+        vm.stopPrank();
         vm.startPrank(address(c3po));
         balanceBefore = crvusdPool.lpToken().balanceOf(address(c3po));
         bonding.claimStream();

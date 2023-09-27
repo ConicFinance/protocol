@@ -24,7 +24,11 @@ interface IBonding {
 
     function setDebtPool(address _debtPool) external;
 
-    function bondCrvUsd(uint256 lpTokenAmount, uint256 minCncReceived, uint64 cncLockTime) external;
+    function bondCncCrvUsd(
+        uint256 lpTokenAmount,
+        uint256 minCncReceived,
+        uint64 cncLockTime
+    ) external returns (uint256);
 
     function recoverRemainingCNC() external;
 

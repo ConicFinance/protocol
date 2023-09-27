@@ -12,11 +12,13 @@ contract MockBonding is IBonding {
 
     function setDebtPool(address _debtPool) external override {}
 
-    function bondCrvUsd(
+    function bondCncCrvUsd(
         uint256 lpTokenAmount,
         uint256 minCncReceived,
         uint64 cncLockTime
-    ) external override {}
+    ) external override returns (uint256) {
+        return 0;
+    }
 
     function recoverRemainingCNC() external override {}
 

@@ -23,8 +23,9 @@ contract Bonding is IBonding, Ownable {
     IERC20 public constant CRV = IERC20(0xD533a949740bb3306d119CC777fa900bA034cd52);
     IERC20 public constant CNC = IERC20(0x9aE380F0272E2162340a5bB646c354271c0F5cFC);
 
-    uint256 public constant MIN_CNC_START_PRICE = 1e18;
+    // The price is set in terms of LP tokens, not USD
     uint256 public constant MAX_CNC_START_PRICE = 20e18;
+    uint256 public constant MIN_CNC_START_PRICE = 1e18;
     uint256 public constant MIN_PRICE_INCREASE_FACTOR = 5e17;
 
     ICNCLockerV3 public immutable cncLocker;
@@ -92,7 +93,7 @@ contract Bonding is IBonding, Ownable {
 
     function setCncStartPrice(uint256 _cncStartPrice) external override onlyOwner {
         require(
-            _cncStartPrice > MIN_CNC_START_PRICE && _cncStartPrice < MAX_CNC_START_PRICE,
+            _cncStartPrice >= MIN_CNC_START_PRICE && _cncStartPrice <= MAX_CNC_START_PRICE,
             "CNC start price not within permitted range"
         );
         cncStartPrice = _cncStartPrice;
@@ -111,17 +112,16 @@ contract Bonding is IBonding, Ownable {
         emit DebtPoolSet(_debtPool);
     }
 
-    function bondCrvUsd(
+    function bondCncCrvUsd(
         uint256 lpTokenAmount,
         uint256 minCncReceived,
         uint64 cncLockTime
-    ) external override {
-        if (!bondingStarted) return;
+    ) external override returns (uint256) {
+        if (!bondingStarted) return 0;
         require(block.timestamp <= bondingEndTime, "Bonding has ended");
         _updateAvailableCncAndStartPrice();
-        uint256 valueInUSD = _computeLpTokenValueInUsd(lpTokenAmount);
         uint256 currentCncBondPrice = computeCurrentCncBondPrice();
-        uint256 cncToReceive = valueInUSD.divDown(currentCncBondPrice);
+        uint256 cncToReceive = lpTokenAmount.divDown(currentCncBondPrice);
 
         require(
             cncToReceive + cncDistributed <= cncAvailable,
@@ -146,6 +146,7 @@ contract Bonding is IBonding, Ownable {
             : currentCncBondPrice;
 
         emit Bonded(msg.sender, lpTokenAmount, cncToReceive, cncLockTime);
+        return cncToReceive;
     }
 
     function claimStream() external override {
@@ -153,6 +154,7 @@ contract Bonding is IBonding, Ownable {
         checkpointAccount(msg.sender);
         IERC20 lpToken = IERC20(crvUsdPool.lpToken());
         uint256 amount = perAccountStreamAccrued[msg.sender];
+        require(amount > 0, "no balance");
         ILpTokenStaker lpTokenStaker = controller.lpTokenStaker();
         lpTokenStaker.unstake(amount, address(crvUsdPool));
         lpToken.safeTransfer(msg.sender, amount);
@@ -224,13 +226,5 @@ contract Bonding is IBonding, Ownable {
                 priceUpdated = true;
             }
         }
-    }
-
-    function _computeLpTokenValueInUsd(uint256 lpTokenAmount) internal view returns (uint256) {
-        uint256 valueInUnderlying = crvUsdPool.exchangeRate().mulDown(lpTokenAmount);
-        uint256 underlyingExchangeRate = IOracle(controller.priceOracle()).getUSDPrice(
-            address(underlying)
-        );
-        return underlyingExchangeRate.mulDown(valueInUnderlying);
     }
 }
