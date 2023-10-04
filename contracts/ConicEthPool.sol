@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 import "./BaseConicPool.sol";
+import "../interfaces/IPoolAdapter.sol";
 
 contract ConicEthPool is BaseConicPool {
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -45,9 +46,14 @@ contract ConicEthPool is BaseConicPool {
     }
 
     function _sanityChecks() internal override {
+        ICurveRegistryCache curveRegistryCache = controller.curveRegistryCache();
         for (uint256 i; i < _pools.length(); i++) {
             address pool_ = _pools.at(i);
             controller.poolAdapterFor(pool_).executeSanityCheck(pool_);
+            address basePool = curveRegistryCache.basePool(pool_);
+            if (basePool != address(0)) {
+                controller.poolAdapterFor(basePool).executeSanityCheck(basePool);
+            }
         }
     }
 }
