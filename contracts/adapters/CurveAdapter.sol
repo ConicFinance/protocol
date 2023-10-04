@@ -100,7 +100,7 @@ contract CurveAdapter is IPoolAdapter {
     ) external view override returns (uint256 underlyingAmount) {
         uint8 decimals = IERC20Metadata(underlying).decimals();
         uint256 usdAmount = computePoolValueInUSD(conicPool, pool);
-        underlyingAmount = usdAmount.convertScale(18, decimals).divDown(underlyingPrice);
+        underlyingAmount = usdAmount.divDown(underlyingPrice).convertScale(18, decimals);
     }
 
     function computePoolValueInUSD(
