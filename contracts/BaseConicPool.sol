@@ -516,13 +516,17 @@ abstract contract BaseConicPool is IConicPool, Pausable {
     function updateWeights(PoolWeight[] memory poolWeights) external onlyController {
         require(poolWeights.length == _pools.length(), "invalid pool weights");
         uint256 total;
+
+        address previousPool;
         for (uint256 i; i < poolWeights.length; i++) {
             address pool = poolWeights[i].poolAddress;
+            require(pool > previousPool, "pools not sorted");
             require(isRegisteredPool(pool), "pool is not registered");
             uint256 newWeight = poolWeights[i].weight;
             weights.set(pool, newWeight);
             emit NewWeight(pool, newWeight);
             total += newWeight;
+            previousPool = pool;
         }
 
         require(total == ScaledMath.ONE, "weights do not sum to 1");

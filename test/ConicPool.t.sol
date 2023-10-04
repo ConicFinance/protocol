@@ -142,9 +142,9 @@ contract ConicPoolTest is ConicPoolBaseTest {
         conicPool.addPool(CurvePools.TRI_POOL);
         conicPool.addPool(CurvePools.SUSD_DAI_USDT_USDC);
         IConicPool.PoolWeight[] memory newWeights = new IConicPool.PoolWeight[](3);
-        newWeights[0] = IConicPool.PoolWeight(CurvePools.FRAX_3CRV, 0.6e18);
+        newWeights[0] = IConicPool.PoolWeight(CurvePools.SUSD_DAI_USDT_USDC, 0.1e18);
         newWeights[1] = IConicPool.PoolWeight(CurvePools.TRI_POOL, 0.3e18);
-        newWeights[2] = IConicPool.PoolWeight(CurvePools.SUSD_DAI_USDT_USDC, 0.1e18);
+        newWeights[2] = IConicPool.PoolWeight(CurvePools.FRAX_3CRV, 0.6e18);
         skip(14 days);
         _setWeights(address(conicPool), newWeights);
 
@@ -163,6 +163,15 @@ contract ConicPoolTest is ConicPoolBaseTest {
         assertApproxEqRel(5_000 * 10 ** decimals, lpDiff, 0.01e18);
         uint256 underlyingReceived = underlying.balanceOf(bb8) - balanceBeforeWithdraw;
         assertApproxEqRel(5_000 * 10 ** decimals, underlyingReceived, 0.01e18);
+    }
+
+    function testDuplicatedWeights() public {
+        skip(14 days);
+        IConicPool.PoolWeight[] memory newWeights = new IConicPool.PoolWeight[](2);
+        newWeights[0] = IConicPool.PoolWeight(CurvePools.CRVUSD_USDT, 0.8e18);
+        newWeights[0] = IConicPool.PoolWeight(CurvePools.CRVUSD_USDC, 0.2e18);
+        vm.expectRevert("pools not sorted");
+        _setWeights(address(conicPool), newWeights);
     }
 
     function testRebalance() public {
