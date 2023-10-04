@@ -4,7 +4,7 @@ pragma solidity 0.8.17;
 import "./ConicTest.sol";
 import "../contracts/testing/MockPool.sol";
 
-contract CurveRegistryCacheTest is ConicTest {
+contract ControllerTest is ConicTest {
     Controller public controller;
 
     function setUp() public override {
@@ -183,13 +183,25 @@ contract CurveRegistryCacheTest is ConicTest {
     }
 
     function testSetMinimumTaintedTransferAmount() public {
-        address lpToken = makeAddr("lp token");
+        _setFork(mainnetFork);
+        controller = _createAndInitializeController();
+        MockPool pool = new MockPool(controller, Tokens.DAI);
+        address lpToken = address(pool.lpToken());
 
         vm.expectRevert("Ownable: caller is not the owner");
         vm.prank(bb8);
         controller.setMinimumTaintedTransferAmount(lpToken, 1e18);
+
+        vm.expectRevert("amount too high");
+        controller.setMinimumTaintedTransferAmount(lpToken, 100_000e18);
+
         controller.setMinimumTaintedTransferAmount(lpToken, 1e18);
         assertEq(controller.getMinimumTaintedTransferAmount(lpToken), 1e18);
+
+        pool = new MockPool(controller, Tokens.WETH);
+        lpToken = address(pool.lpToken());
+        vm.expectRevert("amount too high");
+        controller.setMinimumTaintedTransferAmount(lpToken, 1_000e18);
     }
 
     function _createMockPool() internal returns (IConicPool) {

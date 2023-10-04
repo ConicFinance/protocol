@@ -1,20 +1,27 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.17;
 
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
+import "../libraries/ScaledMath.sol";
+
 import "../interfaces/IController.sol";
 import "../interfaces/tokenomics/ILpTokenStaker.sol";
 import "../interfaces/IPoolAdapter.sol";
+import "../interfaces/pools/ILpToken.sol";
 import "../interfaces/vendor/IBooster.sol";
 
 contract Controller is IController, Ownable, Initializable {
     using EnumerableSet for EnumerableSet.AddressSet;
+    using ScaledMath for uint256;
 
     uint256 internal constant _MAX_WEIGHT_UPDATE_MIN_DELAY = 32 days;
     uint256 internal constant _MIN_WEIGHT_UPDATE_MIN_DELAY = 1 days;
+
+    uint256 internal constant _MAX_TAINTED_USD_AMOUNT = 10_000e18;
 
     EnumerableSet.AddressSet internal _pools;
     EnumerableSet.AddressSet internal _activePools;
@@ -196,6 +203,14 @@ contract Controller is IController, Ownable, Initializable {
         address token,
         uint256 amount
     ) external override onlyOwner {
+        address conicPool = ILpToken(token).minter();
+        IERC20Metadata underlying = IConicPool(conicPool).underlying();
+        uint256 underlyingPrice = priceOracle.getUSDPrice(address(underlying));
+        uint256 scaledAmount = amount.convertScale(underlying.decimals(), 18);
+        uint256 usdAmount = scaledAmount.mulDown(underlyingPrice);
+
+        require(usdAmount <= _MAX_TAINTED_USD_AMOUNT, "amount too high");
+
         _minimumTaintedTransferAmount[token] = amount;
         emit MinimumTaintedTransferAmountSet(token, amount);
     }

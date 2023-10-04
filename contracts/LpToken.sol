@@ -9,7 +9,7 @@ import "../interfaces/pools/ILpToken.sol";
 contract LpToken is ILpToken, ERC20 {
     IController public immutable controller;
 
-    address public immutable minter;
+    address public immutable override minter;
 
     modifier onlyMinter() {
         require(msg.sender == minter, "not authorized");
