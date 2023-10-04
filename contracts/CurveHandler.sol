@@ -243,7 +243,7 @@ contract CurveHandler is ICurveHandler {
             address coin_ = coins_[i];
             uint256 balance_ = IERC20(coin_).balanceOf(address(this));
             if (balance_ == 0) continue;
-            IERC20(coin_).safeApprove(_curvePool, balance_);
+            IERC20(coin_).forceApprove(_curvePool, balance_);
             ICurvePoolV0(_curvePool).exchange(int128(int256(i)), _index, balance_, 0);
         }
     }
@@ -263,7 +263,7 @@ contract CurveHandler is ICurveHandler {
     ) internal {
         bool isETH = _isETH(_curvePool, _token);
         if (!isETH) {
-            IERC20(_token).safeIncreaseAllowance(_curvePool, _amount);
+            IERC20(_token).forceApprove(_curvePool, _amount);
         }
 
         ICurveRegistryCache registry_ = controller.curveRegistryCache();

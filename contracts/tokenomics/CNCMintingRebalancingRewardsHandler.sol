@@ -145,7 +145,7 @@ contract CNCMintingRebalancingRewardsHandler is
         require(underlying.balanceOf(msg.sender) >= underlyingAmount, "insufficient underlying");
         uint256 deviationBefore = conicPool_.computeTotalDeviation();
         underlying.safeTransferFrom(msg.sender, address(this), underlyingAmount);
-        underlying.safeApprove(conicPool, underlyingAmount);
+        underlying.forceApprove(conicPool, underlyingAmount);
         _isInternal = true;
         uint256 lpTokenAmount = conicPool_.deposit(underlyingAmount, 0, false);
         _isInternal = false;

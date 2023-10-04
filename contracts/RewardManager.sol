@@ -132,8 +132,8 @@ contract RewardManager is IRewardManager, Ownable, Initializable {
         CVX.safeTransferFrom(conicPool, address(this), cvxFee);
 
         // Fee transfer to the CNC locker
-        CRV.safeApprove(address(locker), crvFee);
-        CVX.safeApprove(address(locker), cvxFee);
+        CRV.forceApprove(address(locker), crvFee);
+        CVX.forceApprove(address(locker), cvxFee);
         locker.receiveFees(crvFee, cvxFee);
 
         return rewardsClaimed;
