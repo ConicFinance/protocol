@@ -12,6 +12,8 @@ contract GovernanceProxy is IGovernanceProxy, SimpleAccessControl {
     bytes32 public constant GOVERNANCE_ROLE = "GOVERNANCE";
     bytes32 public constant VETO_ROLE = "VETO";
 
+    uint256 internal constant _MAX_DELAY = 14 days;
+
     uint64 public nextChangeId;
 
     /// @notice mapping from function selector to delay in seconds
@@ -118,6 +120,7 @@ contract GovernanceProxy is IGovernanceProxy, SimpleAccessControl {
 
     function updateDelay(bytes4 selector, uint64 delay) external override {
         require(msg.sender == address(this), "not authorized");
+        require(delay <= _MAX_DELAY, "delay too high");
         delays[selector] = delay;
         emit DelayUpdated(selector, delay);
     }
