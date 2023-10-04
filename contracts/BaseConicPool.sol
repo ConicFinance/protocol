@@ -57,6 +57,7 @@ abstract contract BaseConicPool is IConicPool, Pausable {
     uint256 internal constant _MAX_DEVIATION_UPPER_BOUND = 0.2e18;
     uint256 internal constant _TOTAL_UNDERLYING_CACHE_EXPIRY = 3 days;
     uint256 internal constant _MAX_USD_VALUE_FOR_REMOVING_POOL = 100e18;
+    uint256 internal constant _MAX_CURVE_POOLS = 10;
 
     IERC20 internal immutable CVX;
     IERC20 internal immutable CRV;
@@ -482,6 +483,7 @@ abstract contract BaseConicPool is IConicPool, Pausable {
     // Controller and Admin functions
 
     function addPool(address _pool) external override onlyOwner {
+        require(_pools.length() < _MAX_CURVE_POOLS, "max pools reached");
         require(!_pools.contains(_pool), "pool already added");
         IPoolAdapter poolAdapter = controller.poolAdapterFor(_pool);
         bool supported_ = poolAdapter.supportsAsset(_pool, address(underlying));
