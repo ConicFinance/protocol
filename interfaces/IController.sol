@@ -119,4 +119,10 @@ interface IController {
     function setMinimumTaintedTransferAmount(address token, uint256 amount) external;
 
     function getMinimumTaintedTransferAmount(address token) external view returns (uint256);
+
+    // constants
+
+    function MAX_WEIGHT_UPDATE_MIN_DELAY() external view returns (uint256);
+
+    function MIN_WEIGHT_UPDATE_MIN_DELAY() external view returns (uint256);
 }

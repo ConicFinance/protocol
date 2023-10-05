@@ -126,6 +126,14 @@ contract CNCMintingRebalancingRewardsHandler is
         uint256 deviationDelta = deviationBefore - deviationAfter;
         uint256 lastWeightUpdate = controller.lastWeightUpdate(conicPool);
         uint256 elapsedSinceUpdate = uint256(block.timestamp) - lastWeightUpdate;
+
+        // We should never enter this condition when the protocol is working normally
+        // since we execute weight updates more frequently than the max delay
+        uint256 maxElapsedTime = controller.MAX_WEIGHT_UPDATE_MIN_DELAY();
+        if (elapsedSinceUpdate > maxElapsedTime) {
+            elapsedSinceUpdate = maxElapsedTime;
+        }
+
         return
             (elapsedSinceUpdate * cncRebalancingRewardPerDollarPerSecond).mulDown(
                 deviationDelta.convertScale(decimals, 18)
