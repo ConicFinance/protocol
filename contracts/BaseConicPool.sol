@@ -268,9 +268,15 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         for (uint256 i; i < poolsCount_; i++) {
             address pool_ = _pools.at(i);
             uint256 allocatedUnderlying_ = allocatedPerPool[i];
-            uint256 targetAllocation_ = totalUnderlying_.mulDown(weights.get(pool_));
+            uint256 weight_ = weights.get(pool_);
+            uint256 targetAllocation_ = totalUnderlying_.mulDown(weight_);
             if (allocatedUnderlying_ >= targetAllocation_) continue;
-            uint256 maxBalance_ = targetAllocation_ + targetAllocation_.mulDown(_getMaxDeviation());
+            // Compute max balance with deviation
+            uint256 weightWithDeviation_ = weight_.mulDown(ScaledMath.ONE + _getMaxDeviation());
+            weightWithDeviation_ = weightWithDeviation_ > ScaledMath.ONE
+                ? ScaledMath.ONE
+                : weightWithDeviation_;
+            uint256 maxBalance_ = totalUnderlying_.mulDown(weightWithDeviation_);
             uint256 maxDepositAmount_ = maxBalance_ - allocatedUnderlying_;
             if (maxDepositAmount_ <= maxDepositAmount) continue;
             maxDepositAmount = maxDepositAmount_;
@@ -623,7 +629,7 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         emit NewMaxIdleCurveLpRatio(maxIdleCurveLpRatio_);
     }
 
-    function setMaxDeviation(uint256 maxDeviation_) external onlyOwner {
+    function setMaxDeviation(uint256 maxDeviation_) external override onlyOwner {
         require(maxDeviation != maxDeviation_, "same as current");
         require(maxDeviation_ <= _MAX_DEVIATION_UPPER_BOUND, "deviation exceeds upper bound");
         maxDeviation = maxDeviation_;

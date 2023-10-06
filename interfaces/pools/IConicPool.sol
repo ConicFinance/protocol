@@ -50,6 +50,8 @@ interface IConicPool is IPausable {
 
     function setMaxIdleCurveLpRatio(uint256 value) external;
 
+    function setMaxDeviation(uint256 maxDeviation_) external;
+
     function updateDepegThreshold(uint256 value) external;
 
     function depositFor(
