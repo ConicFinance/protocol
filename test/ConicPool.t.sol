@@ -450,6 +450,28 @@ contract ConicPoolTest is ConicPoolBaseTest {
         assertGt(withdrawn, 0);
     }
 
+    function testDepositWithAllocationCappedAtOne() public {
+        skip(21 days);
+        IConicPool.PoolWeight[] memory weights = new IConicPool.PoolWeight[](2);
+        weights[0] = IConicPool.PoolWeight(CurvePools.CRVUSD_USDT, 0.9e18);
+        weights[1] = IConicPool.PoolWeight(CurvePools.CRVUSD_USDC, 0.1e18);
+        _setWeights(address(conicPool), weights);
+        conicPool.setMaxDeviation(0.2e18);
+
+        vm.startPrank(bb8);
+        underlying.approve(address(conicPool), 100_000 * 10 ** decimals);
+
+        conicPool.deposit(10_000 * 10 ** decimals, 1);
+        IConicPool.PoolWithAmount[] memory allocations = conicPool.getAllocatedUnderlying();
+        assertApproxEqRel(
+            allocations[0].amount,
+            10_000 * 10 ** decimals,
+            0.1e18,
+            "allocation too far off"
+        );
+        assertApproxEqRel(allocations[1].amount, 0, 0.1e18, "allocation too far off");
+    }
+
     function _checkAllocations() internal {
         IConicPool.PoolWithAmount[] memory allocations = conicPool.getAllocatedUnderlying();
         uint256 totalUnderlying = conicPool.totalUnderlying();

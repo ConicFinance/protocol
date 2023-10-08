@@ -93,6 +93,8 @@ contract MockPool is IConicPool, Pausable {
 
     function setMaxIdleCurveLpRatio(uint256 value) external {}
 
+    function setMaxDeviation(uint256 maxDeviation_) external override {}
+
     function updateDepegThreshold(uint256 value) external {}
 
     function computeDeviationRatio() external view returns (uint256) {}
