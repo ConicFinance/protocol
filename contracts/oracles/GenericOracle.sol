@@ -31,11 +31,11 @@ contract GenericOracle is IGenericOracle, Ownable {
     }
 
     function getUSDPrice(address token) public view virtual returns (uint256) {
-        if (_chainlinkOracle.isTokenSupported(token)) {
-            return _chainlinkOracle.getUSDPrice(token);
-        }
         if (address(customOracles[token]) != address(0)) {
             return customOracles[token].getUSDPrice(token);
+        }
+        if (_chainlinkOracle.isTokenSupported(token)) {
+            return _chainlinkOracle.getUSDPrice(token);
         }
         return _curveLpOracle.getUSDPrice(token);
     }

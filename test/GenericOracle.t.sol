@@ -2,6 +2,8 @@
 pragma solidity 0.8.17;
 
 import "./ConicPoolBaseTest.sol";
+
+import "../contracts/testing/MockOracle.sol";
 import "../interfaces/vendor/IBooster.sol";
 import "../interfaces/IOracle.sol";
 
@@ -23,5 +25,14 @@ contract GenericOracleTest is ConicPoolBaseTest {
         assertApproxEqRel(oracle.getUSDPrice(Tokens.ST_ETH), ethPrice, 0.1e18, "STETH_ETH");
         assertApproxEqRel(oracle.getUSDPrice(Tokens.CBETH), ethPrice, 0.1e18, "CBETH_ETH");
         assertApproxEqRel(oracle.getUSDPrice(Tokens.RETH), ethPrice, 0.1e18, "RETH_ETH");
+    }
+
+    function testCustomOracle() public {
+        assertApproxEqRel(oracle.getUSDPrice(Tokens.USDC), 1e18, 0.1e18);
+
+        MockOracle customOracle = new MockOracle();
+        customOracle.setPrice(Tokens.USDC, 2e18);
+        GenericOracle(address(oracle)).setCustomOracle(Tokens.USDC, address(customOracle));
+        assertEq(oracle.getUSDPrice(Tokens.USDC), 2e18);
     }
 }
