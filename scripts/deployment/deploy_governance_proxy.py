@@ -10,6 +10,7 @@ from brownie import (
     GenericOracle,
     InflationManager,
     Controller,
+    ChainlinkOracle
 )
 from support.constants import GAS_PRICE, VETO_MULTISIG_ADDRESS  # type: ignore
 from support.utils import load_deployer_account
@@ -33,4 +34,5 @@ def main():
     EmergencyMinter[0].transferOwnership(governance_proxy, params)
     GenericOracle[0].transferOwnership(governance_proxy, params)
     InflationManager[0].transferOwnership(governance_proxy, params)
+    ChainlinkOracle[0].transferOwnership(governance_proxy, params)
     return governance_proxy

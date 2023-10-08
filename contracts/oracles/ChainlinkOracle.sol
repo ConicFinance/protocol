@@ -3,6 +3,7 @@ pragma solidity 0.8.17;
 
 import "@chainlink/contracts/Denominations.sol";
 import "@chainlink/contracts/interfaces/FeedRegistryInterface.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "../../interfaces/IOracle.sol";
 
@@ -41,22 +42,27 @@ interface IAggregatorV3Interface {
         );
 }
 
-contract ChainlinkOracle is IOracle {
+contract ChainlinkOracle is IOracle, Ownable {
+    uint256 public heartbeat = 24 hours;
+
     FeedRegistryInterface internal constant _feedRegistry =
         FeedRegistryInterface(0x47Fb2585D2C56Fe188D0E6ec628a38b74fCeeeDf);
     address internal constant _WETH = address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
     address internal constant _CURVE_ETH = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
+    uint256 internal constant _MIN_HEARTBEAT = 6 hours;
+
+    function setHeartbeat(uint256 heartbeat_) external onlyOwner {
+        require(heartbeat_ >= _MIN_HEARTBEAT, "heartbeat too low");
+        require(heartbeat_ != heartbeat, "same as current");
+        heartbeat = heartbeat_;
+    }
 
     function isTokenSupported(address token) external view override returns (bool) {
         if (_isEth(token)) return true;
-        try _feedRegistry.getFeed(token, Denominations.ETH) returns (AggregatorV2V3Interface) {
+        try this.getUSDPrice(token) returns (uint256) {
             return true;
         } catch Error(string memory) {
-            try _feedRegistry.getFeed(token, Denominations.USD) returns (AggregatorV2V3Interface) {
-                return true;
-            } catch Error(string memory) {
-                return false;
-            }
+            return false;
         }
     }
 
@@ -72,15 +78,15 @@ contract ChainlinkOracle is IOracle {
     ) internal view returns (uint256) {
         if (_isEth(token)) token = Denominations.ETH;
         try _feedRegistry.latestRoundData(token, denomination) returns (
-            uint80 roundID_,
+            uint80,
             int256 price_,
             uint256,
-            uint256 timeStamp_,
-            uint80 answeredInRound_
+            uint256 updatedAt_,
+            uint80
         ) {
-            require(timeStamp_ != 0, "round not complete");
-            require(price_ != 0, "negative price");
-            require(answeredInRound_ >= roundID_, "stale price");
+            require(updatedAt_ != 0, "round not complete");
+            require(price_ > 0, "negative price");
+            require(updatedAt_ >= block.timestamp - heartbeat, "price too old");
             return _scaleFrom(uint256(price_), _feedRegistry.decimals(token, denomination));
         } catch Error(string memory reason) {
             if (shouldRevert) revert(reason);

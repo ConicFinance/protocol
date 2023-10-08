@@ -131,7 +131,7 @@ contract ConicTest is Test {
 
     function setUp() public virtual {
         string memory MAINNET_RPC_URL = vm.envString("MAINNET_RPC_URL");
-        mainnetFork = vm.createFork(MAINNET_RPC_URL, 17_478_718);
+        mainnetFork = vm.createFork(MAINNET_RPC_URL, 18_290_001);
     }
 
     function _setFork(uint256 forkId) internal {
@@ -277,7 +277,8 @@ contract ConicTest is Test {
 
     function _createGenericOracle(address curveLPOracle) internal returns (GenericOracle) {
         GenericOracle genericOracle = new GenericOracle();
-        IOracle chainlinkOracle = new ChainlinkOracle();
+        ChainlinkOracle chainlinkOracle = new ChainlinkOracle();
+        chainlinkOracle.setHeartbeat(365 days * 2); // So we don't break tests when we use `skip()`
         genericOracle.initialize(curveLPOracle, address(chainlinkOracle));
         return genericOracle;
     }
