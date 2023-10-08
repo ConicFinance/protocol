@@ -37,7 +37,7 @@ def main():
         "CNCMintingRebalancingRewardsHandler"
     )
     governance_proxy = get_mainnet_address("GovernanceProxy")
-    cnc_locker = get_mainnet_address("CNCLockerV2")
+    cnc_locker = get_mainnet_address("CNCLockerV3")
 
     reward_manager = deployer.deploy(
         RewardManager,

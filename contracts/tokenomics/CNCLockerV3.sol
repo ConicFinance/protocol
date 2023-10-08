@@ -6,19 +6,19 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "../../libraries/ScaledMath.sol";
-import "../../interfaces/tokenomics/ICNCLockerV2.sol";
+import "../../interfaces/tokenomics/ICNCLockerV3.sol";
 import "../../interfaces/tokenomics/ICNCToken.sol";
 import "../../interfaces/tokenomics/ICNCVoteLocker.sol";
 import "../../interfaces/IController.sol";
 
-contract CNCLockerV2 is ICNCLockerV2, Ownable {
+contract CNCLockerV3 is ICNCLockerV3, Ownable {
     using SafeERC20 for ICNCToken;
     using SafeERC20 for IERC20;
     using ScaledMath for uint256;
     using ScaledMath for uint128;
     using MerkleProof for MerkleProof.Proof;
 
-    address public constant V1_LOCKER = address(0x3F41480DD3b32F1cC579125F9570DCcD07E07667);
+    address public constant V2_LOCKER = address(0x5F2e1Ac047E6A8526f8640a7Ed8AB53a0b3f4acF);
 
     uint128 internal constant _MIN_LOCK_TIME = 120 days;
     uint128 internal constant _MAX_LOCK_TIME = 240 days;
@@ -405,6 +405,10 @@ contract CNCLockerV2 is ICNCLockerV2, Ownable {
             accruedFeesIntegralCvx - perAccountAccruedCvx[account]
         );
         perAccountAccruedCvx[account] = accruedFeesIntegralCvx;
+
+        // bonding stream
+        IBonding bonding = controller.bonding();
+        bonding.checkpointAccount(account);
     }
 
     function computeBoost(uint128 lockTime) public pure override returns (uint128) {
@@ -426,7 +430,7 @@ contract CNCLockerV2 is ICNCLockerV2, Ownable {
         return
             lockedBoosted[account] -
             unlockableBalanceBoosted(account) +
-            ICNCVoteLocker(V1_LOCKER).balanceOf(account);
+            ICNCVoteLocker(V2_LOCKER).balanceOf(account);
     }
 
     function userLocks(address account) external view override returns (VoteLock[] memory) {

@@ -18,7 +18,7 @@ import "../contracts/RewardManager.sol";
 import "../contracts/ConvexHandler.sol";
 import "../contracts/CurveRegistryCache.sol";
 import "../contracts/tokenomics/InflationManager.sol";
-import "../contracts/tokenomics/CNCLockerV2.sol";
+import "../contracts/tokenomics/CNCLockerV3.sol";
 import "../contracts/tokenomics/CNCToken.sol";
 import "../contracts/tokenomics/LpTokenStaker.sol";
 import "../contracts/tokenomics/CNCMintingRebalancingRewardsHandler.sol";
@@ -26,6 +26,7 @@ import "../contracts/oracles/GenericOracle.sol";
 import "../contracts/oracles/CurveLPOracle.sol";
 import "../contracts/oracles/ChainlinkOracle.sol";
 import "../contracts/oracles/CrvUsdOracle.sol";
+import "../contracts/tokenomics/Bonding.sol";
 import "../contracts/testing/MockErc20.sol";
 import "../interfaces/pools/IConicPool.sol";
 
@@ -256,14 +257,14 @@ contract ConicTest is Test {
         return lpTokenStaker;
     }
 
-    function _createLockerV2(Controller controller) internal returns (CNCLockerV2) {
+    function _createLockerV2(Controller controller) internal returns (CNCLockerV3) {
         address crv = Tokens.CRV;
         address cvx = Tokens.CVX;
         if (!_isFork) {
             crv = address(new MockErc20(18));
             cvx = address(new MockErc20(18));
         }
-        CNCLockerV2 locker = new CNCLockerV2(
+        CNCLockerV3 locker = new CNCLockerV3(
             address(controller),
             controller.cncToken(),
             MainnetAddresses.MULTISIG,
@@ -284,7 +285,7 @@ contract ConicTest is Test {
     function _createConicPool(
         Controller controller,
         CNCMintingRebalancingRewardsHandler rebalancingRewardsHandler,
-        CNCLockerV2 locker,
+        CNCLockerV3 locker,
         address underlying,
         string memory name,
         string memory symbol,
@@ -326,6 +327,24 @@ contract ConicTest is Test {
         );
         controller.inflationManager().updatePoolWeights();
         return pool;
+    }
+
+    function _createBonding(
+        CNCLockerV3 locker,
+        Controller controller,
+        IConicPool crvusdPool,
+        uint256 _epochDuration,
+        uint256 _totalNumberEpochs
+    ) internal returns (Bonding) {
+        Bonding bonding = new Bonding(
+            address(locker),
+            address(controller),
+            MainnetAddresses.MULTISIG,
+            address(crvusdPool),
+            _epochDuration,
+            _totalNumberEpochs
+        );
+        return bonding;
     }
 
     function setTokenBalance(address who, address token, uint256 amt) internal {

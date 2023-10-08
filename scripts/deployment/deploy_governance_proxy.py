@@ -1,6 +1,6 @@
 from brownie import (
     GovernanceProxy,
-    CNCLockerV2,
+    CNCLockerV3,
     CNCMintingRebalancingRewardsHandler,
     ConicPool,
     interface,
@@ -21,7 +21,7 @@ def main():
     governance_proxy = deployer.deploy(
         GovernanceProxy, deployer, VETO_MULTISIG_ADDRESS, gas_price=GAS_PRICE
     )
-    CNCLockerV2[0].transferOwnership(governance_proxy, params)
+    CNCLockerV3[0].transferOwnership(governance_proxy, params)
     CNCMintingRebalancingRewardsHandler[0].transferOwnership(governance_proxy, params)
     for i in [0, 1, 2]:
         ConicPool[i].transferOwnership(governance_proxy, params)

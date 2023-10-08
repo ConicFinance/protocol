@@ -5,6 +5,7 @@ import "./pools/IConicPool.sol";
 import "./IGenericOracle.sol";
 import "./tokenomics/IInflationManager.sol";
 import "./tokenomics/ILpTokenStaker.sol";
+import "./tokenomics/IBonding.sol";
 import "./IPoolAdapter.sol";
 import "./ICurveRegistryCache.sol";
 
@@ -17,6 +18,7 @@ interface IController {
     event ConvexHandlerSet(address convexHandler);
     event CurveRegistryCacheSet(address curveRegistryCache);
     event InflationManagerSet(address inflationManager);
+    event BondingSet(address bonding);
     event PriceOracleSet(address priceOracle);
     event WeightUpdateMinDelaySet(uint256 weightUpdateMinDelay);
     event PauseManagerSet(address indexed manager, bool isManager);
@@ -54,6 +56,11 @@ interface IController {
     function switchLpTokenStaker(address _lpTokenStaker) external;
 
     function lpTokenStaker() external view returns (ILpTokenStaker);
+
+    // bonding
+    function bonding() external view returns (IBonding);
+
+    function setBonding(address _bonding) external;
 
     // oracle
     function priceOracle() external view returns (IGenericOracle);

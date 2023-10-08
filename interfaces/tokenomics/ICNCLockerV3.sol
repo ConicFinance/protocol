@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 
 import "../../libraries/MerkleProof.sol";
 
-interface ICNCLockerV2 {
+interface ICNCLockerV3 {
     event Locked(address indexed account, uint256 amount, uint256 unlockTime, bool relocked);
     event UnlockExecuted(address indexed account, uint256 amount);
     event Relocked(address indexed account, uint256 amount);

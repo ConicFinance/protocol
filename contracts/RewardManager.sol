@@ -15,7 +15,7 @@ import "../interfaces/IController.sol";
 import "../interfaces/IOracle.sol";
 import "../interfaces/tokenomics/IInflationManager.sol";
 import "../interfaces/tokenomics/ILpTokenStaker.sol";
-import "../interfaces/tokenomics/ICNCLockerV2.sol";
+import "../interfaces/tokenomics/ICNCLockerV3.sol";
 import "../interfaces/vendor/ICurvePoolV2.sol";
 import "../interfaces/vendor/UniswapRouter02.sol";
 
@@ -53,7 +53,7 @@ contract RewardManager is IRewardManager, Ownable, Initializable {
     address public override conicPool;
     IERC20 public immutable underlying;
     IController public immutable controller;
-    ICNCLockerV2 public immutable locker;
+    ICNCLockerV3 public immutable locker;
     bool internal _claimingCNC;
 
     EnumerableSet.AddressSet internal _extraRewards;
@@ -68,7 +68,7 @@ contract RewardManager is IRewardManager, Ownable, Initializable {
         underlying = IERC20(_underlying);
         controller = IController(_controller);
         WETH.safeApprove(address(CNC_ETH_POOL), type(uint256).max);
-        locker = ICNCLockerV2(cncLocker);
+        locker = ICNCLockerV3(cncLocker);
     }
 
     function initialize(address _pool) external onlyOwner initializer {
