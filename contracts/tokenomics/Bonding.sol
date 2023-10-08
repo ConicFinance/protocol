@@ -65,6 +65,9 @@ contract Bonding is IBonding, Ownable {
         uint256 _epochDuration,
         uint256 _totalNumberEpochs
     ) {
+        require(_totalNumberEpochs > 0, "total number of epochs must be positive");
+        require(_epochDuration > 0, "epoch duration must be positive");
+
         cncLocker = ICNCLockerV3(_cncLocker);
         controller = IController(_controller);
         treasury = _treasury;
@@ -76,8 +79,9 @@ contract Bonding is IBonding, Ownable {
 
     function startBonding() external override onlyOwner {
         require(!bondingStarted, "bonding already started");
+        require(cncStartPrice > 0, "CNC start price not set");
         uint256 cncBalance = CNC.balanceOf(address(this));
-        require(cncBalance > 0, "No CNC balance to bond with");
+        require(cncBalance > 0, "no CNC balance to bond with");
 
         cncPerEpoch = cncBalance / totalNumberEpochs;
 
@@ -151,7 +155,7 @@ contract Bonding is IBonding, Ownable {
 
     function claimStream() external override {
         if (!bondingStarted) return;
-        checkpointAccount(msg.sender);
+        _checkpointAccount(msg.sender);
         IERC20 lpToken = IERC20(crvUsdPool.lpToken());
         uint256 amount = perAccountStreamAccrued[msg.sender];
         require(amount > 0, "no balance");
@@ -171,17 +175,22 @@ contract Bonding is IBonding, Ownable {
 
     function streamCheckpoint() public override {
         if (!bondingStarted) return;
-
-        uint256 streamed = _updateStreamed();
-        uint256 totalBoosted = cncLocker.totalBoosted();
-        if (totalBoosted > 0) {
-            streamIntegral += streamed.divDown(totalBoosted);
-        }
+        _streamCheckpoint();
     }
 
     function checkpointAccount(address account) public override {
         if (!bondingStarted) return;
-        streamCheckpoint();
+        _checkpointAccount(account);
+    }
+
+    function computeCurrentCncBondPrice() public view override returns (uint256) {
+        uint256 discountFactor = ScaledMath.ONE -
+            (block.timestamp - epochStartTime).divDown(epochDuration);
+        return cncStartPrice.mulDown(discountFactor);
+    }
+
+    function _checkpointAccount(address account) internal {
+        _streamCheckpoint();
         uint256 accountBoostedBalance = cncLocker.totalRewardsBoost(account);
         perAccountStreamAccrued[account] += accountBoostedBalance.mulDown(
             streamIntegral - perAccountStreamIntegral[account]
@@ -189,10 +198,12 @@ contract Bonding is IBonding, Ownable {
         perAccountStreamIntegral[account] = streamIntegral;
     }
 
-    function computeCurrentCncBondPrice() public view override returns (uint256) {
-        uint256 discountFactor = ScaledMath.ONE -
-            (block.timestamp - epochStartTime).divDown(epochDuration);
-        return cncStartPrice.mulDown(discountFactor);
+    function _streamCheckpoint() internal {
+        uint256 streamed = _updateStreamed();
+        uint256 totalBoosted = cncLocker.totalBoosted();
+        if (totalBoosted > 0) {
+            streamIntegral += streamed.divDown(totalBoosted);
+        }
     }
 
     function _updateStreamed() internal returns (uint256) {

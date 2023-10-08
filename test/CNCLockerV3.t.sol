@@ -2,7 +2,6 @@
 pragma solidity 0.8.17;
 
 import "./ConicTest.sol";
-import "../contracts/tokenomics/CNCLockerV3Wrapper.sol";
 import "../contracts/testing/MockBonding.sol";
 import "../interfaces/tokenomics/IBonding.sol";
 
@@ -24,7 +23,7 @@ contract CNCLockerV3Test is ConicTest {
         cnc.approve(address(locker), 100_000e18);
 
         vm.mockCall(
-            locker.V1_LOCKER(),
+            locker.V2_LOCKER(),
             abi.encodeWithSelector(IERC20.balanceOf.selector),
             abi.encode(0)
         );
@@ -52,25 +51,6 @@ contract CNCLockerV3Test is ConicTest {
         assertEq(locks[0].amount, 1_000e18);
         assertEq(locks[0].unlockTime, block.timestamp + 120 days);
         assertEq(locker.unlockableBalance(bb8), 0);
-    }
-
-    function testLockerWrapper() public {
-        Controller newController = _createAndInitializeController();
-        CNCLockerV3Wrapper wrapper = new CNCLockerV3Wrapper(newController, locker);
-        vm.startPrank(bb8);
-        locker.lock(1_000e18, 120 days);
-        assertEq(wrapper.balanceOf(bb8), 1_000e18);
-        address tokenStaker = address(newController.lpTokenStaker());
-        vm.mockCall(
-            tokenStaker,
-            abi.encodeWithSelector(LpTokenStaker.getBoost.selector, bb8),
-            abi.encode(2e18)
-        );
-        assertEq(wrapper.balanceOf(bb8), 2_000e18);
-        assertEq(locker.balanceOf(bb8), 1_000e18);
-        skip(120 days);
-        locker.executeAvailableUnlocks();
-        assertEq(wrapper.balanceOf(bb8), 0);
     }
 
     function testLockInvalidTime() public {

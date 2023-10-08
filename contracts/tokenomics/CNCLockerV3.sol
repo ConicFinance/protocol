@@ -18,7 +18,7 @@ contract CNCLockerV3 is ICNCLockerV3, Ownable {
     using ScaledMath for uint128;
     using MerkleProof for MerkleProof.Proof;
 
-    address public constant V1_LOCKER = address(0x3F41480DD3b32F1cC579125F9570DCcD07E07667);
+    address public constant V2_LOCKER = address(0x5F2e1Ac047E6A8526f8640a7Ed8AB53a0b3f4acF);
 
     uint128 internal constant _MIN_LOCK_TIME = 120 days;
     uint128 internal constant _MAX_LOCK_TIME = 240 days;
@@ -430,7 +430,7 @@ contract CNCLockerV3 is ICNCLockerV3, Ownable {
         return
             lockedBoosted[account] -
             unlockableBalanceBoosted(account) +
-            ICNCVoteLocker(V1_LOCKER).balanceOf(account);
+            ICNCVoteLocker(V2_LOCKER).balanceOf(account);
     }
 
     function userLocks(address account) external view override returns (VoteLock[] memory) {
