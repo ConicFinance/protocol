@@ -48,7 +48,7 @@ contract CNCDistributor is ICNCDistributor, Ownable {
         }
 
         require(CNC.balanceOf(address(this)) >= amount, "Insufficient CNC balance");
-        CNC.safeApprove(address(CNC_ETH_GAUGE), amount);
+        CNC.forceApprove(address(CNC_ETH_GAUGE), amount);
         CNC_ETH_GAUGE.deposit_reward_token(address(CNC), amount);
 
         emit GaugeTopUp(amount);

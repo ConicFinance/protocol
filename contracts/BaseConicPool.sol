@@ -174,7 +174,7 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         if (stake) {
             lpToken.mint(address(this), vars.lpReceived, account);
             ILpTokenStaker lpTokenStaker = controller.lpTokenStaker();
-            lpToken.safeApprove(address(lpTokenStaker), vars.lpReceived);
+            lpToken.forceApprove(address(lpTokenStaker), vars.lpReceived);
             lpTokenStaker.stakeFor(vars.lpReceived, address(this), account);
         } else {
             lpToken.mint(account, vars.lpReceived, account);
