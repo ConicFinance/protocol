@@ -17,7 +17,7 @@ contract GenericOracle is IGenericOracle, Ownable {
     IOracle internal _chainlinkOracle;
     IOracle internal _curveLpOracle;
 
-    function initialize(address curveLpOracle, address chainlinkOracle) external {
+    function initialize(address curveLpOracle, address chainlinkOracle) external onlyOwner {
         require(address(_curveLpOracle) == address(0), "already initialized");
         _chainlinkOracle = IOracle(chainlinkOracle);
         _curveLpOracle = IOracle(curveLpOracle);
