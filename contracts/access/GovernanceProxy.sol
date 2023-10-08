@@ -165,12 +165,13 @@ contract GovernanceProxy is IGovernanceProxy, SimpleAccessControl {
             "deadline has not been reached"
         );
 
+        _endChange(change, index, Status.Executed);
+
         for (uint256 i; i < change.calls.length; i++) {
             change.calls[i].target.functionCall(change.calls[i].data);
         }
 
         emit ChangeExecuted(change.id);
-        _endChange(change, index, Status.Executed);
     }
 
     function _endChange(Change storage change, uint256 index, Status status) internal {
