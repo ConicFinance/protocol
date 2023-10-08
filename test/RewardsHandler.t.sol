@@ -30,8 +30,8 @@ contract RewardsHandlerTest is ConicPoolBaseTest {
         controller.setAllowedMultipleDepositsWithdraws(bb8, true);
 
         IConicPool.PoolWeight[] memory weights = new IConicPool.PoolWeight[](2);
-        weights[0] = IConicPool.PoolWeight(CurvePools.FRAX_3CRV, 0.6e18);
-        weights[1] = IConicPool.PoolWeight(CurvePools.TRI_POOL, 0.4e18);
+        weights[0] = IConicPool.PoolWeight(CurvePools.TRI_POOL, 0.4e18);
+        weights[1] = IConicPool.PoolWeight(CurvePools.FRAX_3CRV, 0.6e18);
         _setWeights(address(conicPool), weights);
 
         vm.startPrank(bb8);
@@ -43,8 +43,8 @@ contract RewardsHandlerTest is ConicPoolBaseTest {
         skip(14 days);
 
         IConicPool.PoolWeight[] memory newWeights = new IConicPool.PoolWeight[](2);
-        newWeights[0] = IConicPool.PoolWeight(CurvePools.FRAX_3CRV, 0.8e18);
-        newWeights[1] = IConicPool.PoolWeight(CurvePools.TRI_POOL, 0.2e18);
+        newWeights[0] = IConicPool.PoolWeight(CurvePools.TRI_POOL, 0.2e18);
+        newWeights[1] = IConicPool.PoolWeight(CurvePools.FRAX_3CRV, 0.8e18);
         _setWeights(address(conicPool), newWeights);
 
         skip(1 days);
