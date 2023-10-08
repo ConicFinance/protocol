@@ -19,8 +19,8 @@ contract Controller is IController, Ownable, Initializable {
     using EnumerableSet for EnumerableSet.AddressSet;
     using ScaledMath for uint256;
 
-    uint256 internal constant _MAX_WEIGHT_UPDATE_MIN_DELAY = 32 days;
-    uint256 internal constant _MIN_WEIGHT_UPDATE_MIN_DELAY = 1 days;
+    uint256 public constant MAX_WEIGHT_UPDATE_MIN_DELAY = 21 days;
+    uint256 public constant MIN_WEIGHT_UPDATE_MIN_DELAY = 1 days;
 
     uint256 internal constant _MAX_TAINTED_USD_AMOUNT = 10_000e18;
 
@@ -171,8 +171,8 @@ contract Controller is IController, Ownable, Initializable {
     }
 
     function setWeightUpdateMinDelay(uint256 delay) external override onlyOwner {
-        require(delay < _MAX_WEIGHT_UPDATE_MIN_DELAY, "delay too long");
-        require(delay > _MIN_WEIGHT_UPDATE_MIN_DELAY, "delay too short");
+        require(delay < MAX_WEIGHT_UPDATE_MIN_DELAY, "delay too long");
+        require(delay > MIN_WEIGHT_UPDATE_MIN_DELAY, "delay too short");
         weightUpdateMinDelay = delay;
         emit WeightUpdateMinDelaySet(delay);
     }
