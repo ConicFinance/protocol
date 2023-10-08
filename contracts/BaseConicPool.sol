@@ -304,7 +304,7 @@ abstract contract BaseConicPool is IConicPool, Pausable {
     /// @dev This is using the cached total underlying value, so is not precisely accurate.
     function usdExchangeRate() external view virtual override returns (uint256) {
         uint256 underlyingPrice = controller.priceOracle().getUSDPrice(address(underlying));
-        return _exchangeRate(_cachedTotalUnderlying).mulDown(underlyingPrice);
+        return _exchangeRate(cachedTotalUnderlying()).mulDown(underlyingPrice);
     }
 
     /// @notice Unstake LP Tokens and withdraw underlying
@@ -669,7 +669,7 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         return _computeTotalDeviation(allocatedUnderlying_, perPoolUnderlying);
     }
 
-    function cachedTotalUnderlying() external view virtual override returns (uint256) {
+    function cachedTotalUnderlying() public view virtual override returns (uint256) {
         if (block.timestamp > _cacheUpdatedTimestamp + _TOTAL_UNDERLYING_CACHE_EXPIRY) {
             return totalUnderlying();
         }
