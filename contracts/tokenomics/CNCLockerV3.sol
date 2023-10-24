@@ -20,6 +20,8 @@ contract CNCLockerV3 is ICNCLockerV3, Ownable {
 
     address public constant V2_LOCKER = address(0x5F2e1Ac047E6A8526f8640a7Ed8AB53a0b3f4acF);
 
+    uint128 internal constant _MIN_LOCK_AMOUNT = 10e18;
+    uint128 internal constant _MAX_LOCKS = 10;
     uint128 internal constant _MIN_LOCK_TIME = 120 days;
     uint128 internal constant _MAX_LOCK_TIME = 240 days;
     uint128 internal constant _GRACE_PERIOD = 28 days;
@@ -99,8 +101,10 @@ contract CNCLockerV3 is ICNCLockerV3, Ownable {
         address account
     ) public override {
         require(!isShutdown, "locker suspended");
+        require(amount >= _MIN_LOCK_AMOUNT, "amount too small");
         require((_MIN_LOCK_TIME <= lockTime) && (lockTime <= _MAX_LOCK_TIME), "lock time invalid");
         require(!relock_ || msg.sender == account, "relock only for self");
+        require(voteLocks[account].length < _MAX_LOCKS, "too many locks");
         _feeCheckpoint(account);
         cncToken.safeTransferFrom(msg.sender, address(this), amount);
 
