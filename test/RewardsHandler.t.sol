@@ -128,16 +128,52 @@ contract RewardsHandlerTest is ConicPoolBaseTest {
         rewardsHandler.switchMintingRebalancingRewardsHandler(newRewardsHandler);
     }
 
-    function testSwitchInactiveMintingRebalancingRewardsHandler() public {
+    function testSwitchNonActiveNewMintingRebalancingRewardsHandler() public {
         inflationManager.removePoolRebalancingRewardHandler(
             address(conicPool),
             address(rewardsHandler)
         );
         address newRewardsHandler = _createNewRewardsHandler(false);
+        vm.expectRevert("new handler not registered for a pool");
+        rewardsHandler.switchMintingRebalancingRewardsHandler(newRewardsHandler);
+    }
+
+    function testSwitchNonInitializedNewMintingRebalancingRewardsHandler() public {
+        _doRebalance();
+        assertGt(rewardsHandler.totalCncMinted(), 0);
+        inflationManager.removePoolRebalancingRewardHandler(
+            address(conicPool),
+            address(rewardsHandler)
+        );
+        address newRewardsHandler = _createNewRewardsHandler(false);
+        inflationManager.addPoolRebalancingRewardHandler(
+            address(conicPool),
+            address(newRewardsHandler)
+        );
+        vm.expectRevert("totalCncMinted mismatch");
+        rewardsHandler.switchMintingRebalancingRewardsHandler(newRewardsHandler);
+    }
+
+    function testSwitchInactiveMintingRebalancingRewardsHandler() public {
+        _doRebalance();
+        inflationManager.removePoolRebalancingRewardHandler(
+            address(conicPool),
+            address(rewardsHandler)
+        );
+        address newRewardsHandler = _createNewRewardsHandler(false);
+        CNCMintingRebalancingRewardsHandler(newRewardsHandler).initialize();
+        inflationManager.addPoolRebalancingRewardHandler(
+            address(conicPool),
+            address(newRewardsHandler)
+        );
         rewardsHandler.switchMintingRebalancingRewardsHandler(newRewardsHandler);
         address[] memory minters = cnc.listMinters();
         assertContains(minters, newRewardsHandler);
         assertNotContains(minters, address(rewardsHandler));
+        assertEq(
+            CNCMintingRebalancingRewardsHandler(newRewardsHandler).totalCncMinted(),
+            rewardsHandler.totalCncMinted()
+        );
     }
 
     function _createNewRewardsHandler(bool isMainnet) internal returns (address) {
@@ -147,9 +183,24 @@ contract RewardsHandlerTest is ConicPoolBaseTest {
                     isMainnet ? IController(MainnetAddresses.CONTROLLER) : controller,
                     ICNCToken(isMainnet ? MainnetAddresses.CNC : controller.cncToken()),
                     ICNCMintingRebalancingRewardsHandler(
-                        isMainnet ? MainnetAddresses.CNC_MINTING_REWARDS_HANDLER : address(0)
+                        isMainnet
+                            ? MainnetAddresses.CNC_MINTING_REWARDS_HANDLER
+                            : address(rewardsHandler)
                     )
                 )
             );
+    }
+
+    function _doRebalance() internal {
+        uint256 depositAmount = conicPool.computeTotalDeviation() / 2;
+        vm.prank(bb8);
+        underlying.approve(address(rewardsHandler), depositAmount);
+        vm.prank(bb8);
+        rewardsHandler.rebalance(
+            address(conicPool),
+            depositAmount,
+            (depositAmount * 9) / 10,
+            7.5e18
+        );
     }
 }
