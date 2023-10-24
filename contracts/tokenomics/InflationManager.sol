@@ -30,7 +30,6 @@ contract InflationManager is IInflationManager, Ownable {
 
     uint256 public override currentInflationRate;
     uint256 public lastInflationRateDecay;
-    uint256 public lastUpdate;
     uint256 public totalLpInflationMinted;
 
     mapping(address => uint256) public currentPoolWeights;
@@ -40,7 +39,6 @@ contract InflationManager is IInflationManager, Ownable {
         controller = IController(_controller);
 
         currentInflationRate = _INITIAL_INFLATION_RATE / _INFLATION_RATE_PERIOD;
-        lastUpdate = block.timestamp;
         lastInflationRateDecay = block.timestamp;
     }
 
