@@ -232,7 +232,7 @@ contract ConicTest is Test {
         CNCMintingRebalancingRewardsHandler rebalancingRewardsHandler = new CNCMintingRebalancingRewardsHandler(
                 controller,
                 cnc,
-                ICNCMintingRebalancingRewardsHandler(address(0))
+                ICNCMintingRebalancingRewardsHandler(address(1))
             );
 
         if (_isFork) {

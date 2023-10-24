@@ -54,6 +54,12 @@ contract CNCMintingRebalancingRewardsHandler is
         ICNCToken _cnc,
         ICNCMintingRebalancingRewardsHandler _previousRewardsHandler
     ) {
+        require(address(_controller) != address(0), "controller is zero address");
+        require(address(_cnc) != address(0), "cnc is zero address");
+        require(
+            address(_previousRewardsHandler) != address(0),
+            "previousRewardsHandler is zero address"
+        );
         cncRebalancingRewardPerDollarPerSecond = _INITIAL_REBALANCING_REWARD_PER_DOLLAR_PER_SECOND;
         controller = _controller;
         previousRewardsHandler = _previousRewardsHandler;
