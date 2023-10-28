@@ -28,6 +28,7 @@ contract CNCLockerV3 is ICNCLockerV3, Ownable {
     uint128 internal constant _KICK_PENALTY = 1e17;
     uint256 internal constant _MAX_KICK_PENALTY_AMOUNT = 1000e18;
     uint128 constant _AIRDROP_DURATION = 182 days;
+    uint256 internal constant _MIN_AIRDROP_BOOST = 1e18;
     uint256 internal constant _MAX_AIRDROP_BOOST = 3.5e18;
 
     ICNCToken public immutable cncToken;
@@ -372,6 +373,7 @@ contract CNCLockerV3 is ICNCLockerV3, Ownable {
     function claimAirdropBoost(uint256 amount, MerkleProof.Proof calldata proof) external override {
         require(block.timestamp < airdropEndTime, "airdrop ended");
         require(!claimedAirdrop[msg.sender], "already claimed");
+        require(amount >= _MIN_AIRDROP_BOOST, "amount cannot be below 1");
         require(amount <= _MAX_AIRDROP_BOOST, "amount exceeds max airdrop boost");
         bytes32 node = keccak256(abi.encodePacked(msg.sender, amount));
         require(proof.isValid(node, merkleRoot), "invalid proof");
