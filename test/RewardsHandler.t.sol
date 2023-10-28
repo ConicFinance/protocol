@@ -147,7 +147,9 @@ contract RewardsHandlerTest is ConicPoolBaseTest {
                     isMainnet ? IController(MainnetAddresses.CONTROLLER) : controller,
                     ICNCToken(isMainnet ? MainnetAddresses.CNC : controller.cncToken()),
                     ICNCMintingRebalancingRewardsHandler(
-                        isMainnet ? MainnetAddresses.CNC_MINTING_REWARDS_HANDLER : address(0)
+                        isMainnet
+                            ? MainnetAddresses.CNC_MINTING_REWARDS_HANDLER
+                            : address(rewardsHandler)
                     )
                 )
             );
