@@ -330,8 +330,14 @@ contract CNCLockerV3 is ICNCLockerV3, Ownable {
         emit Relocked(msg.sender, lockedBalance[msg.sender]);
     }
 
+    function batchKick(LockId[] memory locks) external override {
+        for (uint256 i; i < locks.length; i++) {
+            kick(locks[i].user, locks[i].id);
+        }
+    }
+
     /// @notice Kick an expired lock
-    function kick(address user, uint64 lockId) external override {
+    function kick(address user, uint64 lockId) public override {
         uint256 lockIndex = _getLockIndexById(user, lockId);
         VoteLock[] storage _pending = voteLocks[user];
         require(

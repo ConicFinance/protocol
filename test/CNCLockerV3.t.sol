@@ -196,6 +196,41 @@ contract CNCLockerV3Test is ConicTest {
         assertEq(locker.userLocks(bb8).length, 0);
     }
 
+    function testBatchKick() public {
+        vm.startPrank(bb8);
+        locker.lock(1_000e18, 120 days);
+        locker.lock(500e18, 240 days);
+        locker.lock(200e18, 120 days);
+        vm.stopPrank();
+        vm.startPrank(r2);
+
+        ICNCLockerV3.LockId[] memory toKick = new ICNCLockerV3.LockId[](2);
+        toKick[0] = ICNCLockerV3.LockId({user: bb8, id: 0});
+        toKick[1] = ICNCLockerV3.LockId({user: bb8, id: 2});
+
+        vm.expectRevert("cannot kick this lock");
+        locker.batchKick(toKick);
+
+        skip(130 days);
+
+        // grace period
+        vm.expectRevert("cannot kick this lock");
+        locker.batchKick(toKick);
+
+        skip(18 days);
+        uint256 balanceBB8Before = cnc.balanceOf(bb8);
+        uint256 balanceR2Before = cnc.balanceOf(r2);
+        locker.batchKick(toKick);
+
+        assertEq(cnc.balanceOf(bb8) - balanceBB8Before, 1080e18);
+        assertEq(cnc.balanceOf(r2) - balanceR2Before, 120e18);
+
+        assertEq(locker.totalLocked(), 500e18);
+        assertEq(locker.balanceOf(bb8), 750e18); // 500 * 1.5 time boost
+        assertEq(locker.unlockableBalance(bb8), 0);
+        assertEq(locker.userLocks(bb8).length, 1);
+    }
+
     function testAirdropBoost() public {
         bytes32[] memory hashes = new bytes32[](13);
         hashes[0] = 0x7ca1e15cf85ed4fbb5f8dd9566c910517f2e2871ff5a719c95c8c317b7af2046;

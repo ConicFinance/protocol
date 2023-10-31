@@ -21,6 +21,11 @@ interface ICNCLockerV3 {
         uint64 id;
     }
 
+    struct LockId {
+        address user;
+        uint64 id;
+    }
+
     function lock(uint256 amount, uint64 lockTime) external;
 
     function lock(uint256 amount, uint64 lockTime, bool relock) external;
@@ -55,6 +60,8 @@ interface ICNCLockerV3 {
     function unlockableBalanceBoosted(address user) external view returns (uint256);
 
     function kick(address user, uint64 lockId) external;
+
+    function batchKick(LockId[] memory locks) external;
 
     function receiveFees(uint256 amountCrv, uint256 amountCvx) external;
 
