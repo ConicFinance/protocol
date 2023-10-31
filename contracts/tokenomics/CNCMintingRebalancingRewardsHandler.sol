@@ -197,6 +197,25 @@ contract CNCMintingRebalancingRewardsHandler is
                 ),
                 "handler is still registered for a pool"
             );
+            require(
+                controller.inflationManager().hasPoolRebalancingRewardHandlers(
+                    pools[i],
+                    newRebalancingRewardsHandler
+                ),
+                "new handler not registered for a pool"
+            );
+            require(
+                address(
+                    CNCMintingRebalancingRewardsHandler(newRebalancingRewardsHandler)
+                        .previousRewardsHandler()
+                ) == address(this),
+                "previousRewardsHandler mismatch"
+            );
+            require(
+                ICNCMintingRebalancingRewardsHandler(newRebalancingRewardsHandler)
+                    .totalCncMinted() == totalCncMinted,
+                "totalCncMinted mismatch"
+            );
         }
         cnc.addMinter(newRebalancingRewardsHandler);
         cnc.renounceMinterRights();
