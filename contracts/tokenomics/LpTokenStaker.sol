@@ -133,12 +133,6 @@ contract LpTokenStaker is ILpTokenStaker {
         return boosts[user].timeBoost;
     }
 
-    function getTimeToFullBoost(address user) external view returns (uint256) {
-        uint256 fullBoostAt_ = boosts[user].lastUpdated + INCREASE_PERIOD;
-        if (fullBoostAt_ <= block.timestamp) return 0;
-        return fullBoostAt_ - block.timestamp;
-    }
-
     function getBoost(address user) external view override returns (uint256) {
         if (isShutdown) return MIN_BOOST;
         (uint256 userStakedUSD, uint256 totalStakedUSD) = _getTotalStakedForUserCommonDenomination(
