@@ -22,7 +22,8 @@ interface IGovernanceProxy is ISimpleAccessControl {
     enum Status {
         Pending,
         Canceled,
-        Executed
+        Executed,
+        Executing
     }
 
     /// @notice this represents a function call as part of a Change
