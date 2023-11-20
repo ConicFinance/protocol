@@ -37,7 +37,7 @@ commands:
             wget https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup -O /tmp/foundryup
             chmod +x /tmp/foundryup
             mkdir -p $HOME/.foundry/bin $HOME/.foundry/share/man/man1
-            /tmp/foundryup
+            PATH=$HOME/.foundry/bin:$PATH /tmp/foundryup
 jobs:
   foundry_integration_tests:
     executor: python/default

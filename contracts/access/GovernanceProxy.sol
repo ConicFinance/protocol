@@ -167,12 +167,15 @@ contract GovernanceProxy is IGovernanceProxy, SimpleAccessControl {
             change.requestedAt + change.delay <= block.timestamp,
             "deadline has not been reached"
         );
+        require(change.status == Status.Pending, "change not pending");
 
-        _endChange(change, index, Status.Executed);
+        change.status = Status.Executing;
 
         for (uint256 i; i < change.calls.length; i++) {
             change.calls[i].target.functionCall(change.calls[i].data);
         }
+
+        _endChange(change, index, Status.Executed);
 
         emit ChangeExecuted(change.id);
     }
