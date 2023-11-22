@@ -25,6 +25,7 @@ interface IConicPool is IPausable {
     event Shutdown();
     event DepegThresholdUpdated(uint256 newThreshold);
     event MaxDeviationUpdated(uint256 newMaxDeviation);
+    event RebalancingRewardsEnabledSet(bool enabled);
 
     struct PoolWeight {
         address poolAddress;
@@ -136,4 +137,8 @@ interface IConicPool is IPausable {
     function handleDepeggedCurvePool(address curvePool_) external;
 
     function isBalanced() external view returns (bool);
+
+    function rebalancingRewardsEnabled() external view returns (bool);
+
+    function setRebalancingRewardsEnabled(bool enabled) external;
 }

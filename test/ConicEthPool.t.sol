@@ -133,6 +133,7 @@ contract ConicEthPoolTest is ConicPoolBaseTest {
     }
 
     function testRebalance() public {
+        conicPool.setRebalancingRewardsEnabled(true);
         vm.startPrank(bb8);
         underlying.approve(address(conicPool), 100 * 10 ** decimals);
 

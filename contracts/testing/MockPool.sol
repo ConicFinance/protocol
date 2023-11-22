@@ -224,4 +224,8 @@ contract MockPool is IConicPool, Pausable {
     function usdExchangeRate() external pure override returns (uint256) {
         return 1e18;
     }
+
+    function setRebalancingRewardsEnabled(bool enabled) external override {}
+
+    function rebalancingRewardsEnabled() external view override returns (bool) {}
 }

@@ -78,6 +78,10 @@ abstract contract BaseConicPool is IConicPool, Pausable {
     uint256 internal _cacheUpdatedTimestamp;
     uint256 internal _cachedTotalUnderlying;
 
+    /// @dev `true` if the rebalancing rewards are enabled, i.e. can become active
+    /// A pool starts rebalancing rewards disabled, and these need to be enabled through governance
+    bool public rebalancingRewardsEnabled;
+
     /// @dev `true` while the reward distribution is active
     bool public rebalancingRewardActive;
 
@@ -547,7 +551,9 @@ abstract contract BaseConicPool is IConicPool, Pausable {
 
         uint256 totalDeviation = _computeTotalDeviation(totalUnderlying_, allocatedPerPool);
         totalDeviationAfterWeightUpdate = totalDeviation;
-        rebalancingRewardActive = !_isBalanced(allocatedPerPool, totalAllocated);
+        rebalancingRewardActive =
+            rebalancingRewardsEnabled &&
+            !_isBalanced(allocatedPerPool, totalAllocated);
 
         // Updating price cache for all pools
         // Used for seeing if a pool has depegged
@@ -585,7 +591,7 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         // Set target curve pool weight to 0
         // Scale up other weights to compensate
         _setWeightToZero(curvePool_);
-        rebalancingRewardActive = true;
+        rebalancingRewardActive = rebalancingRewardsEnabled;
 
         emit HandledDepeggedCurvePool(curvePool_);
     }
@@ -702,6 +708,12 @@ abstract contract BaseConicPool is IConicPool, Pausable {
             uint256[] memory allocatedPerPool_
         ) = getTotalAndPerPoolUnderlying();
         return _isBalanced(allocatedPerPool_, allocatedUnderlying_);
+    }
+
+    function setRebalancingRewardsEnabled(bool enabled) external override onlyOwner {
+        require(rebalancingRewardsEnabled != enabled, "same as current");
+        rebalancingRewardsEnabled = enabled;
+        emit RebalancingRewardsEnabledSet(enabled);
     }
 
     /**
