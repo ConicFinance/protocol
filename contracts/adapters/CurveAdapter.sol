@@ -162,6 +162,10 @@ contract CurveAdapter is IPoolAdapter {
         return controller.curveRegistryCache().lpToken(pool);
     }
 
+    function getAllUnderlyingCoins(address pool) external view returns (address[] memory) {
+        return controller.curveRegistryCache().getAllUnderlyingCoins(pool);
+    }
+
     function supportsAsset(address pool, address asset) external view override returns (bool) {
         return controller.curveRegistryCache().hasCoinAnywhere(pool, asset);
     }

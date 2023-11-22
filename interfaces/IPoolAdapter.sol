@@ -41,4 +41,7 @@ interface IPoolAdapter {
 
     /// @notice Executes a sanity check, e.g. checking for reentrancy
     function executeSanityCheck(address pool) external;
+
+    /// @notice returns all the underlying coins of the pool
+    function getAllUnderlyingCoins(address pool) external view returns (address[] memory);
 }

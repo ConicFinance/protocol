@@ -9,4 +9,39 @@ library ArrayExtensions {
         }
         return copy_;
     }
+
+    function concat(
+        address[] memory a,
+        address[] memory b
+    ) internal pure returns (address[] memory result) {
+        result = new address[](a.length + b.length);
+        for (uint256 i; i < a.length; i++) result[i] = a[i];
+        for (uint256 i; i < b.length; i++) result[i + a.length] = b[i];
+    }
+
+    function includes(address[] memory array, address element) internal pure returns (bool) {
+        for (uint256 i; i < array.length; i++) {
+            if (array[i] == element) return true;
+        }
+        return false;
+    }
+
+    function removeDuplicates(address[] memory array) internal pure returns (address[] memory) {
+        address[] memory unique = new address[](array.length);
+        uint256 j;
+        for (uint256 i; i < array.length; i++) {
+            if (!includes(unique, array[i])) {
+                unique[j++] = array[i];
+            }
+        }
+        return trim(unique, j);
+    }
+
+    function trim(
+        address[] memory array,
+        uint256 length
+    ) internal pure returns (address[] memory trimmed) {
+        trimmed = new address[](length);
+        for (uint256 i; i < length; i++) trimmed[i] = array[i];
+    }
 }

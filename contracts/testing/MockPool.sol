@@ -228,4 +228,6 @@ contract MockPool is IConicPool, Pausable {
     function setRebalancingRewardsEnabled(bool enabled) external override {}
 
     function rebalancingRewardsEnabled() external view override returns (bool) {}
+
+    function getAllUnderlyingCoins() external view returns (address[] memory result) {}
 }

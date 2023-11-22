@@ -28,6 +28,7 @@ import "../libraries/ArrayExtensions.sol";
 
 abstract contract BaseConicPool is IConicPool, Pausable {
     using ArrayExtensions for uint256[];
+    using ArrayExtensions for address[];
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableMap for EnumerableMap.AddressToUintMap;
     using SafeERC20 for IERC20;
@@ -584,9 +585,8 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         // Validation
         require(isRegisteredPool(curvePool_), "pool is not registered");
         require(weights.get(curvePool_) != 0, "pool weight already 0");
-        require(!_isDepegged(address(underlying)), "underlying is depegged");
-        address lpToken_ = controller.poolAdapterFor(curvePool_).lpToken(curvePool_);
-        require(_isDepegged(lpToken_), "pool is not depegged");
+        require(!_isAssetDepegged(address(underlying)), "underlying is depegged");
+        require(_isPoolDepegged(curvePool_), "pool is not depegged");
 
         // Set target curve pool weight to 0
         // Scale up other weights to compensate
@@ -824,6 +824,27 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         return true;
     }
 
+    function getAllUnderlyingCoins() public view returns (address[] memory) {
+        uint256 poolsLength_ = _pools.length();
+        address[] memory underlyings_ = new address[](0);
+
+        for (uint256 i; i < poolsLength_; i++) {
+            address pool_ = _pools.at(i);
+            address[] memory coins = controller.poolAdapterFor(pool_).getAllUnderlyingCoins(pool_);
+            underlyings_ = underlyings_.concat(coins);
+        }
+        return underlyings_.removeDuplicates();
+    }
+
+    function _isPoolDepegged(address pool_) internal view returns (bool) {
+        address[] memory coins = controller.poolAdapterFor(pool_).getAllUnderlyingCoins(pool_);
+        for (uint256 i; i < coins.length; i++) {
+            address coin = coins[i];
+            if (_isAssetDepegged(coin)) return true;
+        }
+        return false;
+    }
+
     function _getMaxDeviation() internal view returns (uint256) {
         return rebalancingRewardActive ? 0 : maxDeviation;
     }
@@ -832,5 +853,5 @@ abstract contract BaseConicPool is IConicPool, Pausable {
 
     function _updatePriceCache() internal virtual;
 
-    function _isDepegged(address asset_) internal view virtual returns (bool);
+    function _isAssetDepegged(address asset_) internal view virtual returns (bool);
 }

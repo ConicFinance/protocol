@@ -141,4 +141,6 @@ interface IConicPool is IPausable {
     function rebalancingRewardsEnabled() external view returns (bool);
 
     function setRebalancingRewardsEnabled(bool enabled) external;
+
+    function getAllUnderlyingCoins() external view returns (address[] memory result);
 }

@@ -19,19 +19,17 @@ contract ConicEthPool is BaseConicPool {
     ) BaseConicPool(_underlying, _rewardManager, _controller, _lpTokenName, _symbol, _cvx, _crv) {}
 
     function _updatePriceCache() internal override {
-        uint256 length_ = _pools.length();
+        address[] memory underlyings = getAllUnderlyingCoins();
         IOracle priceOracle_ = controller.priceOracle();
         uint256 ethUsdPrice_ = priceOracle_.getUSDPrice(address(0));
-        for (uint256 i; i < length_; i++) {
-            address pool = _pools.at(i);
-            address lpToken_ = controller.poolAdapterFor(pool).lpToken(pool);
-            uint256 priceInUsd_ = priceOracle_.getUSDPrice(lpToken_);
-            uint256 priceInEth_ = priceInUsd_.divDown(ethUsdPrice_);
-            _cachedPrices[lpToken_] = priceInEth_;
+        for (uint256 i; i < underlyings.length; i++) {
+            address coin = underlyings[i];
+            uint256 priceInUsd_ = priceOracle_.getUSDPrice(coin);
+            _cachedPrices[coin] = priceInUsd_.divDown(ethUsdPrice_);
         }
     }
 
-    function _isDepegged(address asset_) internal view override returns (bool) {
+    function _isAssetDepegged(address asset_) internal view override returns (bool) {
         // ETH has no sense of peg per se, so always return false for it
         if (asset_ == address(underlying)) return false;
 

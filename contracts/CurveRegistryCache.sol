@@ -2,12 +2,15 @@
 pragma solidity 0.8.17;
 
 import "../libraries/CurvePoolUtils.sol";
+import "../libraries/ArrayExtensions.sol";
 
 import "../interfaces/ICurveRegistryCache.sol";
 import "../interfaces/vendor/ICurveMetaRegistry.sol";
 import "../interfaces/vendor/ICurvePoolV1.sol";
 
 contract CurveRegistryCache is ICurveRegistryCache {
+    using ArrayExtensions for address[];
+
     address internal constant _ETH = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
     address internal constant _WETH = address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
     ICurveMetaRegistry internal constant _CURVE_REGISTRY =
@@ -167,6 +170,20 @@ contract CurveRegistryCache is ICurveRegistryCache {
 
     function nCoins(address pool_) external view override onlyInitialized(pool_) returns (uint256) {
         return _nCoins[pool_];
+    }
+
+    function getAllUnderlyingCoins(address pool) public view returns (address[] memory) {
+        address base = _basePool[pool];
+        if (base == address(0)) return _coins[pool];
+
+        address[] memory result = new address[](_nCoins[pool] - 1);
+        for ((uint256 i, uint256 j) = (0, 0); i < _nCoins[pool]; i++) {
+            address coin = _coins[pool][i];
+            if (_poolFromLpToken[coin] != base) {
+                result[j++] = coin;
+            }
+        }
+        return result.concat(getAllUnderlyingCoins(base));
     }
 
     function coinIndices(

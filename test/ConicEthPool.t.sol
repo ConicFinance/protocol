@@ -211,14 +211,46 @@ contract ConicEthPoolTest is ConicPoolBaseTest {
         vm.expectRevert("pool is not depegged");
         conicPool.handleDepeggedCurvePool(curvePool);
 
-        address lpToken = controller.curveRegistryCache().lpToken(curvePool);
-        uint256 price = controller.priceOracle().getUSDPrice(lpToken);
+        for (uint256 i; i < pools.length; i++) {
+            address lpToken = controller.curveRegistryCache().lpToken(pools[i]);
+            uint256 lpTokenPrice = controller.priceOracle().getUSDPrice(lpToken);
+            vm.mockCall(
+                address(controller.priceOracle()),
+                abi.encodeWithSelector(IOracle.getUSDPrice.selector, lpToken),
+                abi.encode(lpTokenPrice)
+            );
+        }
+
+        address coin = controller.curveRegistryCache().getAllUnderlyingCoins(curvePool)[1];
+        assertNotEq(coin, Tokens.WETH);
+
+        uint256 ethPrice = controller.priceOracle().getUSDPrice(address(0));
         vm.mockCall(
             address(controller.priceOracle()),
-            abi.encodeWithSelector(IOracle.getUSDPrice.selector, lpToken),
+            abi.encodeWithSelector(IOracle.getUSDPrice.selector, address(0)),
+            abi.encode((ethPrice * 95) / 100)
+        );
+
+        uint256 price = controller.priceOracle().getUSDPrice(coin);
+        vm.mockCall(
+            address(controller.priceOracle()),
+            abi.encodeWithSelector(IOracle.getUSDPrice.selector, coin),
             abi.encode((price * 95) / 100)
         );
+
+        // should not work if ETH and the coin still have the same price
+        vm.expectRevert("pool is not depegged");
         conicPool.handleDepeggedCurvePool(curvePool);
+
+        // restore price of ETH
+        vm.mockCall(
+            address(controller.priceOracle()),
+            abi.encodeWithSelector(IOracle.getUSDPrice.selector, address(0)),
+            abi.encode(ethPrice)
+        );
+
+        conicPool.handleDepeggedCurvePool(curvePool);
+
         assertEq(conicPool.getPoolWeight(curvePool), 0);
         _ensureWeightsSumTo1(conicPool);
     }
