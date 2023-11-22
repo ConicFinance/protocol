@@ -59,6 +59,8 @@ abstract contract BaseConicPool is IConicPool, Pausable {
     uint256 internal constant _TOTAL_UNDERLYING_CACHE_EXPIRY = 3 days;
     uint256 internal constant _MAX_USD_VALUE_FOR_REMOVING_POOL = 100e18;
     uint256 internal constant _MAX_CURVE_POOLS = 10;
+    uint256 internal constant _MIN_EMERGENCY_REBALANCING_REWARD_FACTOR = 1e18;
+    uint256 internal constant _MAX_EMERGENCY_REBALANCING_REWARD_FACTOR = 100e18;
 
     IERC20 internal immutable CVX;
     IERC20 internal immutable CRV;
@@ -85,6 +87,17 @@ abstract contract BaseConicPool is IConicPool, Pausable {
 
     /// @dev `true` while the reward distribution is active
     bool public rebalancingRewardActive;
+
+    /// @notice the time at which rebalancing rewards have been activated
+    uint64 public rebalancingRewardsActivatedAt;
+
+    /// @notice The factor by which the rebalancing reward is multiplied when a pool is depegged
+    uint256 public emergencyRebalancingRewardsFactor = 10e18;
+
+    /// @notice The factor by which the rebalancing reward is multiplied
+    /// this is 1 (scaled to 18 decimals) for normal rebalancing situations but is set
+    /// to `emergencyRebalancingRewardsFactor` when a pool is depegged
+    uint256 public rebalancingRewardsFactor;
 
     EnumerableSet.AddressSet internal _pools;
     EnumerableMap.AddressToUintMap internal weights; // liquidity allocation weights
@@ -555,6 +568,8 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         rebalancingRewardActive =
             rebalancingRewardsEnabled &&
             !_isBalanced(allocatedPerPool, totalAllocated);
+        rebalancingRewardsFactor = ScaledMath.ONE;
+        rebalancingRewardsActivatedAt = uint64(block.timestamp);
 
         // Updating price cache for all pools
         // Used for seeing if a pool has depegged
@@ -592,6 +607,8 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         // Scale up other weights to compensate
         _setWeightToZero(curvePool_);
         rebalancingRewardActive = rebalancingRewardsEnabled;
+        rebalancingRewardsFactor = emergencyRebalancingRewardsFactor;
+        rebalancingRewardsActivatedAt = uint64(block.timestamp);
 
         emit HandledDepeggedCurvePool(curvePool_);
     }
@@ -714,6 +731,13 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         require(rebalancingRewardsEnabled != enabled, "same as current");
         rebalancingRewardsEnabled = enabled;
         emit RebalancingRewardsEnabledSet(enabled);
+    }
+
+    function setEmergencyRebalancingRewardFactor(uint256 factor_) external onlyOwner {
+        require(factor_ >= _MIN_EMERGENCY_REBALANCING_REWARD_FACTOR, "factor below minimum");
+        require(factor_ <= _MAX_EMERGENCY_REBALANCING_REWARD_FACTOR, "factor above maximum");
+        emergencyRebalancingRewardsFactor = factor_;
+        emit EmergencyRebalancingRewardFactorUpdated(factor_);
     }
 
     /**

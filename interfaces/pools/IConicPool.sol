@@ -26,6 +26,7 @@ interface IConicPool is IPausable {
     event DepegThresholdUpdated(uint256 newThreshold);
     event MaxDeviationUpdated(uint256 newMaxDeviation);
     event RebalancingRewardsEnabledSet(bool enabled);
+    event EmergencyRebalancingRewardFactorUpdated(uint256 factor);
 
     struct PoolWeight {
         address poolAddress;
@@ -143,4 +144,8 @@ interface IConicPool is IPausable {
     function setRebalancingRewardsEnabled(bool enabled) external;
 
     function getAllUnderlyingCoins() external view returns (address[] memory result);
+
+    function rebalancingRewardsFactor() external view returns (uint256);
+
+    function rebalancingRewardsActivatedAt() external view returns (uint64);
 }

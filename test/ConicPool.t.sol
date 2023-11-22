@@ -302,6 +302,7 @@ contract ConicPoolTest is ConicPoolBaseTest {
 
     function testHandleDepeggedPool() public {
         address[] memory pools = conicPool.allPools();
+        conicPool.setRebalancingRewardsEnabled(true);
         address curvePool = pools[0];
         vm.expectRevert("pool is not depegged");
         conicPool.handleDepeggedCurvePool(curvePool);
@@ -323,8 +324,12 @@ contract ConicPoolTest is ConicPoolBaseTest {
             abi.encodeWithSelector(IOracle.getUSDPrice.selector, coin),
             abi.encode((price * 95) / 100)
         );
+        skip(1 hours);
         conicPool.handleDepeggedCurvePool(curvePool);
         assertEq(conicPool.getPoolWeight(curvePool), 0);
+        assertTrue(conicPool.rebalancingRewardActive());
+        assertEq(conicPool.rebalancingRewardsFactor(), 10e18);
+        assertEq(conicPool.rebalancingRewardsActivatedAt(), uint64(block.timestamp));
         _ensureWeightsSumTo1(conicPool);
     }
 
