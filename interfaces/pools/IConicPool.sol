@@ -150,4 +150,6 @@ interface IConicPool is IPausable {
     function rebalancingRewardsFactor() external view returns (uint256);
 
     function rebalancingRewardsActivatedAt() external view returns (uint64);
+
+    function runSanityChecks() external;
 }

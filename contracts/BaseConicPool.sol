@@ -156,7 +156,7 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         uint256 minLpReceived,
         bool stake
     ) public override notPaused returns (uint256) {
-        _sanityChecks();
+        runSanityChecks();
 
         DepositVars memory vars;
 
@@ -379,7 +379,7 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         uint256 minUnderlyingReceived,
         address to
     ) public override returns (uint256) {
-        _sanityChecks();
+        runSanityChecks();
 
         // Preparing Withdrawals
         require(lpToken.balanceOf(msg.sender) >= conicLpAmount, "insufficient balance");
@@ -546,6 +546,8 @@ abstract contract BaseConicPool is IConicPool, Pausable {
     }
 
     function updateWeights(PoolWeight[] memory poolWeights) external onlyController {
+        runSanityChecks();
+
         require(poolWeights.length == _pools.length(), "invalid pool weights");
         uint256 total;
 
@@ -601,7 +603,7 @@ abstract contract BaseConicPool is IConicPool, Pausable {
     /// @dev Cannot be called if the underlying of this pool itself has depegged.
     /// @param curvePool_ The Curve Pool to handle.
     function handleDepeggedCurvePool(address curvePool_) external override {
-        _sanityChecks();
+        runSanityChecks();
 
         // Validation
         require(isRegisteredPool(curvePool_), "pool is not registered");
@@ -649,6 +651,8 @@ abstract contract BaseConicPool is IConicPool, Pausable {
      * @param curvePool_ Curve pool for which the Convex PID is invalid (has been shut down)
      */
     function handleInvalidConvexPid(address curvePool_) external {
+        runSanityChecks();
+
         require(isRegisteredPool(curvePool_), "curve pool not registered");
         ICurveRegistryCache registryCache_ = controller.curveRegistryCache();
         uint256 pid = registryCache_.getPid(curvePool_);
@@ -875,11 +879,11 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         return false;
     }
 
+    function runSanityChecks() public virtual {}
+
     function _getMaxDeviation() internal view returns (uint256) {
         return rebalancingRewardActive ? 0 : maxDeviation;
     }
-
-    function _sanityChecks() internal virtual {}
 
     function _updatePriceCache() internal virtual;
 
