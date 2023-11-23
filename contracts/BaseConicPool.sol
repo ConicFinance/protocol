@@ -312,6 +312,12 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         return totalUnderlying_;
     }
 
+    function updateRewardSpendingApproval(address token, bool approved) external {
+        require(msg.sender == address(rewardManager), "not authorized");
+        uint256 amount = approved ? type(uint256).max : 0;
+        IERC20(token).safeApprove(address(rewardManager), amount);
+    }
+
     function _exchangeRate(uint256 totalUnderlying_) internal view returns (uint256) {
         uint256 lpSupply = lpToken.totalSupply();
         if (lpSupply == 0 || totalUnderlying_ == 0) return ScaledMath.ONE;

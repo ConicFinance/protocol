@@ -13,6 +13,8 @@ interface CVXMinter {
 }
 
 contract RewardManagerV2Test is ConicPoolBaseTest {
+    using ScaledMath for uint256;
+
     IConicPool public conicPool;
     IERC20Metadata public underlying;
     uint256 public decimals;
@@ -20,6 +22,8 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
     IConvexHandler public convexHandler;
     ICurveHandler public curveHandler;
 
+    ICurvePoolV2 public constant CNC_ETH_POOL =
+        ICurvePoolV2(0x838af967537350D2C44ABB8c010E49E32673ab94);
     address public constant GOVERNANCE_PROXY = address(0xCb7c67bDde9F7aF0667E8d82bb87F1432Bd1d902);
 
     function setUp() public override {
@@ -100,6 +104,44 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
         assertTrue(IERC20(Tokens.CRV).balanceOf(bb8) == CRV_BEFORE + crvBalance);
         assertTrue(IERC20(Tokens.CVX).balanceOf(bb8) == CVX_BEFORE + cvxBalance);
         assertTrue(IERC20(Tokens.CNC).balanceOf(bb8) == CNC_BEFORE + cncBalance);
+    }
+
+    function testExtraRewardTokens() external {
+        rewardManager.addExtraReward(Tokens.SUSHI);
+
+        uint256 DEPOSIT_AMOUNT = 10_000 * 10 ** underlying.decimals();
+        vm.prank(bb8);
+        underlying.approve(address(conicPool), DEPOSIT_AMOUNT);
+        vm.prank(bb8);
+        conicPool.deposit(DEPOSIT_AMOUNT, 0);
+
+        inflationManager.updatePoolWeights();
+        IBooster(controller.convexBooster()).earmarkRewards(ConvexPid.TRI_POOL);
+
+        vm.warp(block.timestamp + 86400);
+
+        // simulate reward token
+        setTokenBalance(address(this), Tokens.SUSHI, 1000e18);
+        IERC20(Tokens.SUSHI).transfer(address(conicPool), 1000e18);
+        uint256 uniPrice = controller.priceOracle().getUSDPrice(Tokens.SUSHI);
+        uint256 ethPrice = controller.priceOracle().getUSDPrice(Tokens.ETH);
+        uint256 cncEthPrice = CNC_ETH_POOL.get_dy(0, 1, 1e18);
+        uint256 expectedCncAmount = ((1000e18 * uniPrice) / ethPrice).mulDown(cncEthPrice);
+
+        assertTrue(lpTokenStaker.getBalanceForPool(address(conicPool)) > 0);
+
+        IBooster(controller.convexBooster()).earmarkRewards(ConvexPid.TRI_POOL);
+        assertTrue(convexHandler.getCrvEarnedBatch(address(conicPool), conicPool.allPools()) > 0);
+        (uint256 cncBalance, , ) = rewardManager.claimableRewards(bb8);
+        assertTrue(cncBalance > 0);
+
+        uint256 cncBefore = IERC20(Tokens.CNC).balanceOf(bb8);
+
+        vm.prank(bb8);
+        rewardManager.claimEarnings();
+        uint256 cncEarned = IERC20(Tokens.CNC).balanceOf(bb8) - cncBefore;
+
+        assertApproxEqRel(cncEarned, cncBalance + expectedCncAmount, 0.02e18);
     }
 
     function testRewardHandlingIfClaimedOnConvex() external {

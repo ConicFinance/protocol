@@ -131,6 +131,8 @@ interface IConicPool is IPausable {
 
     function handleInvalidConvexPid(address pool) external;
 
+    function updateRewardSpendingApproval(address token, bool approved) external;
+
     function shutdownPool() external;
 
     function isShutdown() external view returns (bool);

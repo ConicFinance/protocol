@@ -236,4 +236,6 @@ contract MockPool is IConicPool, Pausable {
     }
 
     function rebalancingRewardsActivatedAt() external view returns (uint64) {}
+
+    function updateRewardSpendingApproval(address token, bool approved) external {}
 }

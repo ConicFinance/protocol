@@ -215,7 +215,7 @@ contract RewardManager is IRewardManager, Ownable, Initializable {
         _accountCheckpoint(account);
     }
 
-    function _accountCheckpoint(address account) internal {
+    function _accountCheckpoint(address account) internal returns (uint256) {
         uint256 accountBalance = controller.lpTokenStaker().getUserBalanceForPool(
             conicPool,
             account
@@ -224,6 +224,7 @@ contract RewardManager is IRewardManager, Ownable, Initializable {
         _updateAccountRewardsMeta(_CNC_KEY, account, accountBalance);
         _updateAccountRewardsMeta(_CRV_KEY, account, accountBalance);
         _updateAccountRewardsMeta(_CVX_KEY, account, accountBalance);
+        return accountBalance;
     }
 
     function _updateAccountRewardsMeta(bytes32 key, address account, uint256 balance) internal {
@@ -239,18 +240,23 @@ contract RewardManager is IRewardManager, Ownable, Initializable {
     /// order to receive a share of the CRV, CVX and CNC earnings.
     /// after selling all extra reward tokens.
     function claimEarnings() public override returns (uint256, uint256, uint256) {
-        _accountCheckpoint(msg.sender);
+        uint256 accountBalance = _accountCheckpoint(msg.sender);
         uint256 crvAmount = _rewardsMeta[_CRV_KEY].accountShare[msg.sender];
         uint256 cvxAmount = _rewardsMeta[_CVX_KEY].accountShare[msg.sender];
         uint256 cncAmount = _rewardsMeta[_CNC_KEY].accountShare[msg.sender];
-
         if (
             crvAmount > CRV.balanceOf(conicPool) ||
             cvxAmount > CVX.balanceOf(conicPool) ||
             cncAmount > CNC.balanceOf(conicPool)
         ) {
             _claimPoolEarningsAndSellRewardTokens();
+            // account for potential CNC earned by selling extra rewards
+            cncAmount += accountBalance.mulDown(
+                _rewardsMeta[_CNC_KEY].earnedIntegral -
+                    _rewardsMeta[_CNC_KEY].accountIntegral[msg.sender]
+            );
         }
+
         _rewardsMeta[_CNC_KEY].accountShare[msg.sender] = 0;
         _rewardsMeta[_CVX_KEY].accountShare[msg.sender] = 0;
         _rewardsMeta[_CRV_KEY].accountShare[msg.sender] = 0;
@@ -324,6 +330,11 @@ contract RewardManager is IRewardManager, Ownable, Initializable {
         uint256 extraRewardsLength_ = _extraRewards.length();
         if (extraRewardsLength_ == 0) return;
         for (uint256 i; i < extraRewardsLength_; i++) {
+            IERC20(_extraRewards.at(i)).safeTransferFrom(
+                conicPool,
+                address(this),
+                IERC20(_extraRewards.at(i)).balanceOf(conicPool)
+            );
             _swapRewardTokenForWeth(_extraRewards.at(i));
         }
         _swapWethForCNC();
@@ -335,6 +346,7 @@ contract RewardManager is IRewardManager, Ownable, Initializable {
 
     function addExtraReward(address reward) public override onlyOwner returns (bool) {
         require(reward != address(0), "invalid address");
+        require(!_extraRewards.contains(reward), "already added");
         require(
             reward != address(CVX) &&
                 reward != address(CRV) &&
@@ -350,6 +362,7 @@ contract RewardManager is IRewardManager, Ownable, Initializable {
             require(reward != curveLpToken_, "token not allowed");
         }
 
+        IConicPool(conicPool).updateRewardSpendingApproval(reward, true);
         IERC20(reward).safeApprove(address(SUSHISWAP), 0);
         IERC20(reward).safeApprove(address(SUSHISWAP), type(uint256).max);
         emit ExtraRewardAdded(reward);
@@ -363,7 +376,9 @@ contract RewardManager is IRewardManager, Ownable, Initializable {
     }
 
     function removeExtraReward(address tokenAddress) external onlyOwner {
+        require(_extraRewards.contains(tokenAddress), "not added");
         _extraRewards.remove(tokenAddress);
+        IConicPool(conicPool).updateRewardSpendingApproval(tokenAddress, false);
         emit ExtraRewardRemoved(tokenAddress);
     }
 
