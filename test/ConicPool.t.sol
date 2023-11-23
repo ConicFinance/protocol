@@ -472,6 +472,30 @@ contract ConicPoolTest is ConicPoolBaseTest {
         assertApproxEqRel(allocations[1].amount, 0, 0.1e18, "allocation too far off");
     }
 
+    function testWithdrawWithLpTokenShutdown() public {
+        vm.prank(bb8);
+        underlying.approve(address(conicPool), 100_000 * 10 ** decimals);
+        vm.prank(bb8);
+        conicPool.deposit(10_000 * 10 ** decimals, 1, true);
+
+        ILpTokenStaker lpTokenStaker = controller.lpTokenStaker();
+
+        vm.prank(address(controller));
+        lpTokenStaker.shutdown();
+        assertTrue(lpTokenStaker.isShutdown());
+
+        vm.prank(bb8);
+        vm.expectRevert("LpTokenStaker: shutdown");
+        conicPool.deposit(10_000 * 10 ** decimals, 1, true);
+
+        uint256 balanceBeforeWithdraw = underlying.balanceOf(bb8);
+        uint256 lpAmount = lpTokenStaker.getUserBalanceForPool(address(conicPool), bb8);
+        vm.prank(bb8);
+        conicPool.unstakeAndWithdraw(lpAmount, 1);
+        uint256 underlyingReceived = underlying.balanceOf(bb8) - balanceBeforeWithdraw;
+        assertApproxEqRel(10_000 * 10 ** decimals, underlyingReceived, 0.01e18);
+    }
+
     function _checkAllocations() internal {
         IConicPool.PoolWithAmount[] memory allocations = conicPool.getAllocatedUnderlying();
         uint256 totalUnderlying = conicPool.totalUnderlying();
