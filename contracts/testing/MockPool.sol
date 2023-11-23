@@ -45,6 +45,14 @@ contract MockRewardManager is IRewardManager {
     function sellRewardTokens() external {}
 
     function claimPoolEarningsAndSellRewardTokens() external {}
+
+    function feePercentage() external view override returns (uint256) {
+        return 0;
+    }
+
+    function feesEnabled() external view override returns (bool) {
+        return false;
+    }
 }
 
 contract MockPool is IConicPool, Pausable {
