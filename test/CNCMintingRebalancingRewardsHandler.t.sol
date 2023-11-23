@@ -43,6 +43,11 @@ contract CNCMintingRebalancingRewardsHandlerTest is ConicTest {
         rewardsHandler = _createRebalancingRewardsHandler(controller);
         underlying = new FakeUnderlying();
         fakePool = new FakePool(address(underlying));
+        vm.mockCall(
+            address(controller.priceOracle()),
+            abi.encodeWithSelector(IOracle.getUSDPrice.selector, address(underlying)),
+            abi.encode(uint256(1e18))
+        );
     }
 
     function testComputeRebalancingRewards() public {
@@ -98,6 +103,22 @@ contract CNCMintingRebalancingRewardsHandlerTest is ConicTest {
             500e18
         );
         uint256 expected = 4.16e17; // 500 * 3600 * [5e18 / (3600 * 1 * 10_000 * 6)] * 10
+        assertApproxEqRel(rebalancingRewards, expected, 1e16);
+    }
+
+    function testComputeRebalancingRewardsDifferentPrice() public {
+        skip(3600);
+        vm.mockCall(
+            address(controller.priceOracle()),
+            abi.encodeWithSelector(IOracle.getUSDPrice.selector, address(underlying)),
+            abi.encode(uint256(100e18))
+        );
+        uint256 rebalancingRewards = rewardsHandler.computeRebalancingRewards(
+            address(fakePool),
+            10e18,
+            5e18
+        );
+        uint256 expected = 4.16e16; // 5 * 3600 * [5e18 / (3600 * 1 * 10_000 * 6)] * 100
         assertApproxEqRel(rebalancingRewards, expected, 1e16);
     }
 }

@@ -142,10 +142,13 @@ contract CNCMintingRebalancingRewardsHandler is
             elapsed = maxElapsedTime;
         }
 
+        uint256 underlyingPrice = controller.priceOracle().getUSDPrice(address(pool.underlying()));
+
         return
             (elapsed * cncRebalancingRewardPerDollarPerSecond)
                 .mulDown(deviationDelta.convertScale(decimals, 18))
-                .mulDown(rewardFactor);
+                .mulDown(rewardFactor)
+                .mulDown(underlyingPrice);
     }
 
     function rebalance(
