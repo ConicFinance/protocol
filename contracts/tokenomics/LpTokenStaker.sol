@@ -182,7 +182,6 @@ contract LpTokenStaker is ILpTokenStaker {
             return;
         }
         cnc.mint(address(pool), cncToMint);
-        controller.inflationManager().executeInflationRateUpdate();
         poolShares[pool] = 0;
         emit TokensClaimed(pool, cncToMint);
     }
