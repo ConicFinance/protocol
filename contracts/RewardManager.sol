@@ -215,7 +215,7 @@ contract RewardManager is IRewardManager, Ownable, Initializable {
         _accountCheckpoint(account);
     }
 
-    function _accountCheckpoint(address account) internal returns (uint256) {
+    function _accountCheckpoint(address account) internal {
         uint256 accountBalance = controller.lpTokenStaker().getUserBalanceForPool(
             conicPool,
             account
@@ -224,7 +224,6 @@ contract RewardManager is IRewardManager, Ownable, Initializable {
         _updateAccountRewardsMeta(_CNC_KEY, account, accountBalance);
         _updateAccountRewardsMeta(_CRV_KEY, account, accountBalance);
         _updateAccountRewardsMeta(_CVX_KEY, account, accountBalance);
-        return accountBalance;
     }
 
     function _updateAccountRewardsMeta(bytes32 key, address account, uint256 balance) internal {
@@ -240,7 +239,7 @@ contract RewardManager is IRewardManager, Ownable, Initializable {
     /// order to receive a share of the CRV, CVX and CNC earnings.
     /// after selling all extra reward tokens.
     function claimEarnings() public override returns (uint256, uint256, uint256) {
-        uint256 accountBalance = _accountCheckpoint(msg.sender);
+        _accountCheckpoint(msg.sender);
         uint256 crvAmount = _rewardsMeta[_CRV_KEY].accountShare[msg.sender];
         uint256 cvxAmount = _rewardsMeta[_CVX_KEY].accountShare[msg.sender];
         uint256 cncAmount = _rewardsMeta[_CNC_KEY].accountShare[msg.sender];
@@ -250,11 +249,11 @@ contract RewardManager is IRewardManager, Ownable, Initializable {
             cncAmount > CNC.balanceOf(conicPool)
         ) {
             _claimPoolEarningsAndSellRewardTokens();
-            // account for potential CNC earned by selling extra rewards
-            cncAmount += accountBalance.mulDown(
-                _rewardsMeta[_CNC_KEY].earnedIntegral -
-                    _rewardsMeta[_CNC_KEY].accountIntegral[msg.sender]
-            );
+            if (_extraRewards.length() > 0) {
+                // if we sold some rewards for CNC, we need to update the account checkpoint
+                _accountCheckpoint(msg.sender);
+                cncAmount = _rewardsMeta[_CNC_KEY].accountShare[msg.sender];
+            }
         }
 
         _rewardsMeta[_CNC_KEY].accountShare[msg.sender] = 0;
@@ -300,9 +299,11 @@ contract RewardManager is IRewardManager, Ownable, Initializable {
 
         uint256 receivedCnc_ = CNC.balanceOf(conicPool) - cncBalanceBefore_;
         uint256 _totalStaked = controller.lpTokenStaker().getBalanceForPool(conicPool);
-        if (_totalStaked > 0)
+        if (_totalStaked > 0 && receivedCnc_ > 0) {
             _rewardsMeta[_CNC_KEY].earnedIntegral += receivedCnc_.divDown(_totalStaked);
-        emit SoldRewardTokens(receivedCnc_);
+            _rewardsMeta[_CNC_KEY].lastHoldings += receivedCnc_;
+            emit SoldRewardTokens(receivedCnc_);
+        }
     }
 
     /// @notice Claims all claimable CVX and CRV from Convex for all staked Curve LP tokens

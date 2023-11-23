@@ -121,7 +121,7 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
         vm.warp(block.timestamp + 86400);
 
         // simulate reward token
-        setTokenBalance(address(this), Tokens.SUSHI, 1000e18);
+        setTokenBalance(address(this), Tokens.SUSHI, 10_0000e18);
         IERC20(Tokens.SUSHI).transfer(address(conicPool), 1000e18);
         uint256 uniPrice = controller.priceOracle().getUSDPrice(Tokens.SUSHI);
         uint256 ethPrice = controller.priceOracle().getUSDPrice(Tokens.ETH);
@@ -142,6 +142,22 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
         uint256 cncEarned = IERC20(Tokens.CNC).balanceOf(bb8) - cncBefore;
 
         assertApproxEqRel(cncEarned, cncBalance + expectedCncAmount, 0.02e18);
+
+        vm.warp(block.timestamp + 86400);
+        IERC20(Tokens.SUSHI).transfer(address(conicPool), 1000e18);
+        (cncBalance, , ) = rewardManager.claimableRewards(bb8);
+        rewardManager.claimPoolEarningsAndSellRewardTokens();
+        rewardManager.poolCheckpoint();
+        assertTrue(cncBalance > 0);
+
+        cncBefore = IERC20(Tokens.CNC).balanceOf(bb8);
+
+        vm.prank(bb8);
+        rewardManager.claimEarnings();
+        cncEarned = IERC20(Tokens.CNC).balanceOf(bb8) - cncBefore;
+
+        assertApproxEqRel(cncEarned, cncBalance + expectedCncAmount, 0.02e18);
+        assertApproxEqAbs(IERC20(Tokens.CNC).balanceOf(address(conicPool)), 0, 1e10);
     }
 
     function testRewardHandlingIfClaimedOnConvex() external {
