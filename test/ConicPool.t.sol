@@ -303,6 +303,12 @@ contract ConicPoolTest is ConicPoolBaseTest {
     function testHandleDepeggedPool() public {
         address[] memory pools = conicPool.allPools();
         conicPool.setRebalancingRewardsEnabled(true);
+
+        vm.startPrank(bb8);
+        underlying.approve(address(conicPool), 100_000 * 10 ** decimals);
+        conicPool.deposit(10_000 * 10 ** decimals, 1);
+        vm.stopPrank();
+
         address curvePool = pools[0];
         vm.expectRevert("pool is not depegged");
         conicPool.handleDepeggedCurvePool(curvePool);
@@ -334,6 +340,7 @@ contract ConicPoolTest is ConicPoolBaseTest {
     }
 
     function testHandleDepeggedPoolSumTo1() public {
+        conicPool.setRebalancingRewardsEnabled(true);
         IConicPool.PoolWeight[] memory newWeights = new IConicPool.PoolWeight[](2);
         newWeights[0] = IConicPool.PoolWeight(CurvePools.CRVUSD_USDT, 666666666666666667);
         newWeights[1] = IConicPool.PoolWeight(CurvePools.CRVUSD_USDC, 333333333333333333);
@@ -357,6 +364,7 @@ contract ConicPoolTest is ConicPoolBaseTest {
         conicPool.handleDepeggedCurvePool(CurvePools.CRVUSD_USDT);
         assertEq(conicPool.getPoolWeight(CurvePools.CRVUSD_USDT), 0);
         _ensureWeightsSumTo1(conicPool);
+        assertEq(conicPool.rebalancingRewardActive(), false);
     }
 
     function testRemovePool() public {
