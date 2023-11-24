@@ -27,6 +27,7 @@ contract Bonding is IBonding, Ownable {
     uint256 public constant MAX_CNC_START_PRICE = 20e18;
     uint256 public constant MIN_CNC_START_PRICE = 1e18;
     uint256 public constant MIN_PRICE_INCREASE_FACTOR = 5e17;
+    uint256 public constant MAX_MIN_BONDING_AMOUNT = 1_000e18;
 
     ICNCLockerV3 public immutable cncLocker;
     IController public immutable controller;
@@ -48,6 +49,7 @@ contract Bonding is IBonding, Ownable {
     uint256 public epochStartTime; // start time of the current epoch
     uint256 public lastCncPrice;
     uint256 public epochPriceIncreaseFactor;
+    uint256 public minBondingAmount;
 
     mapping(uint256 => uint256) public assetsInEpoch;
     uint256 public lastStreamUpdate; // last update for asset streaming
@@ -111,6 +113,12 @@ contract Bonding is IBonding, Ownable {
         emit PriceIncreaseFactorSet(_priceIncreaseFactor);
     }
 
+    function setMinBondingAmount(uint256 _minBondingAmount) external override onlyOwner {
+        require(_minBondingAmount <= MAX_MIN_BONDING_AMOUNT, "Min. bonding amount is too high");
+        minBondingAmount = _minBondingAmount;
+        emit MinBondingAmountSet(_minBondingAmount);
+    }
+
     function setDebtPool(address _debtPool) external override onlyOwner {
         debtPool = _debtPool;
         emit DebtPoolSet(_debtPool);
@@ -123,6 +131,7 @@ contract Bonding is IBonding, Ownable {
     ) external override returns (uint256) {
         if (!bondingStarted) return 0;
         require(block.timestamp <= bondingEndTime, "Bonding has ended");
+        require(lpTokenAmount > minBondingAmount, "Min. bonding amount not reached");
         _updateAvailableCncAndStartPrice();
         uint256 currentCncBondPrice = computeCurrentCncBondPrice();
         uint256 cncToReceive = lpTokenAmount.divDown(currentCncBondPrice);

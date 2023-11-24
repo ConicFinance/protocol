@@ -4,6 +4,7 @@ pragma solidity 0.8.17;
 interface IBonding {
     event CncStartPriceSet(uint256 startPrice);
     event PriceIncreaseFactorSet(uint256 factor);
+    event MinBondingAmountSet(uint256 amount);
     event Bonded(
         address indexed account,
         uint256 lpTokenAmount,
@@ -21,6 +22,8 @@ interface IBonding {
     function setCncStartPrice(uint256 _cncStartPrice) external;
 
     function setCncPriceIncreaseFactor(uint256 _priceIncreaseFactor) external;
+
+    function setMinBondingAmount(uint256 _minBondingAmount) external;
 
     function setDebtPool(address _debtPool) external;
 
