@@ -79,6 +79,7 @@ contract Bonding is IBonding, Ownable {
 
     function startBonding() external override onlyOwner {
         require(!bondingStarted, "bonding already started");
+        require(epochPriceIncreaseFactor > 0, "Epoch price increase factor has not been set");
         require(cncStartPrice > 0, "CNC start price not set");
         uint256 cncBalance = CNC.balanceOf(address(this));
         require(cncBalance > 0, "no CNC balance to bond with");
