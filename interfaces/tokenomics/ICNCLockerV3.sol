@@ -79,6 +79,8 @@ interface ICNCLockerV3 {
 
     function totalVoteBoost(address account) external view returns (uint256);
 
+    function totalStreamBoost(address account) external view returns (uint256);
+
     function totalRewardsBoost(address account) external view returns (uint256);
 
     function userLocks(address account) external view returns (VoteLock[] memory);

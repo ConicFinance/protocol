@@ -282,4 +282,66 @@ contract BondingTest is ConicPoolBaseTest {
             0.01e18
         );
     }
+
+    function testTwoBondAndClaimWithNonBondingLocks() public {
+        // get CNC tokens and lock but don't bond
+        vm.prank(MainnetAddresses.LP_TOKEN_STAKER);
+        cnc.mint(address(c3po), 100_000e18);
+        vm.startPrank(c3po);
+        cnc.approve(address(locker), 1_000e18);
+        locker.lock(1_000e18, 180 days);
+        vm.stopPrank();
+
+        // get LP tokens and don't stake
+        vm.startPrank(address(bb8));
+        underlying.approve(address(crvusdPool), 100_000 * 10 ** decimals);
+        crvusdPool.deposit(10_000 * 10 ** decimals, 1, false);
+        uint256 lpReceived = crvusdPool.lpToken().balanceOf(bb8);
+        assertApproxEqRel(10_000 * 10 ** decimals, lpReceived, 0.01e18);
+        crvusdPool.lpToken().approve(address(bonding), 10_000 * 10 ** decimals);
+
+        // bond 200o LP tokens for 1000 CNC
+        bonding.bondCncCrvUsd(2_000e18, 990e18, 180 days);
+
+        assertApproxEqRel(
+            bonding.assetsInEpoch(bonding.epochStartTime() + bonding.epochDuration()),
+            2000e18,
+            0.01e18
+        );
+
+        // skip 2 epochs
+        skip(15 days);
+
+        bonding.checkpointAccount(address(bb8));
+
+        assertApproxEqRel(
+            1_000 * 10 ** decimals,
+            bonding.perAccountStreamAccrued(address(bb8)),
+            0.01e18
+        );
+
+        bonding.checkpointAccount(address(c3po));
+        assertApproxEqRel(
+            1_000 * 10 ** decimals,
+            bonding.perAccountStreamAccrued(address(c3po)),
+            0.01e18
+        );
+
+        uint256 balanceBefore = crvusdPool.lpToken().balanceOf(address(bb8));
+        bonding.claimStream();
+        assertApproxEqRel(
+            1_000 * 10 ** decimals,
+            crvusdPool.lpToken().balanceOf(address(bb8)) - balanceBefore,
+            0.01e18
+        );
+        vm.stopPrank();
+        vm.startPrank(c3po);
+        balanceBefore = crvusdPool.lpToken().balanceOf(address(c3po));
+        bonding.claimStream();
+        assertApproxEqRel(
+            1_000 * 10 ** decimals,
+            crvusdPool.lpToken().balanceOf(address(c3po)) - balanceBefore,
+            0.01e18
+        );
+    }
 }

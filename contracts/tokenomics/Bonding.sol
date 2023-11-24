@@ -133,14 +133,17 @@ contract Bonding is IBonding, Ownable {
         );
         require(cncToReceive >= minCncReceived, "Insufficient CNC received");
 
+        // Checkpoint to set user integrals etc.
+        _checkpointAccount(msg.sender);
+
         IERC20 lpToken = IERC20(crvUsdPool.lpToken());
         lpToken.safeTransferFrom(msg.sender, address(this), lpTokenAmount);
         ILpTokenStaker lpTokenStaker = controller.lpTokenStaker();
         lpToken.approve(address(lpTokenStaker), lpTokenAmount);
         lpTokenStaker.stake(lpTokenAmount, address(crvUsdPool));
+
         // Schedule assets for streaming in the next epoch
         assetsInEpoch[epochStartTime + epochDuration] += lpTokenAmount;
-
         cncDistributed += cncToReceive;
         CNC.approve(address(cncLocker), cncToReceive);
         cncLocker.lockFor(cncToReceive, cncLockTime, false, msg.sender);
@@ -191,7 +194,7 @@ contract Bonding is IBonding, Ownable {
 
     function _checkpointAccount(address account) internal {
         _streamCheckpoint();
-        uint256 accountBoostedBalance = cncLocker.totalRewardsBoost(account);
+        uint256 accountBoostedBalance = cncLocker.totalStreamBoost(account);
         perAccountStreamAccrued[account] += accountBoostedBalance.mulDown(
             streamIntegral - perAccountStreamIntegral[account]
         );

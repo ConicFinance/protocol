@@ -438,6 +438,10 @@ contract CNCLockerV3 is ICNCLockerV3, Ownable {
         return totalRewardsBoost(account).mulDown(controller.lpTokenStaker().getBoost(account));
     }
 
+    function totalStreamBoost(address account) external view override returns (uint256) {
+        return lockedBoosted[account];
+    }
+
     function totalRewardsBoost(address account) public view override returns (uint256) {
         return
             lockedBoosted[account] -
