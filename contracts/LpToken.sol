@@ -56,9 +56,9 @@ contract LpToken is ILpToken, ERC20 {
         return _amount;
     }
 
-    function taint(address from, address to) external {
+    function taint(address from, address to, uint256 amount) external {
         require(msg.sender == address(controller.lpTokenStaker()), "not authorized");
-        _taint(from, to);
+        _taint(from, to, amount);
     }
 
     function _beforeTokenTransfer(address from, address to, uint256 amount) internal override {
@@ -70,9 +70,7 @@ contract LpToken is ILpToken, ERC20 {
         if (from == lpTokenStaker || to == lpTokenStaker) return;
 
         // taint any other type of transfer
-        if (amount > controller.getMinimumTaintedTransferAmount(address(this))) {
-            _taint(from, to);
-        }
+        _taint(from, to, amount);
     }
 
     function _ensureSingleEvent(address ubo, uint256 amount) internal {
@@ -85,9 +83,12 @@ contract LpToken is ILpToken, ERC20 {
         }
     }
 
-    function _taint(address from, address to) internal {
-        if (from == to) return;
-        if (_lastEvent[from] == block.number) {
+    function _taint(address from, address to, uint256 amount) internal {
+        if (
+            from != to &&
+            _lastEvent[from] == block.number &&
+            amount > controller.getMinimumTaintedTransferAmount(address(this))
+        ) {
             _lastEvent[to] = block.number;
         }
     }
