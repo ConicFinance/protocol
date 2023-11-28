@@ -176,8 +176,7 @@ contract LpTokenStaker is ILpTokenStaker {
 
     function _claimCNCRewardsForPool(address pool) internal {
         require(controller.isPool(pool), "not a pool");
-        checkpoint(pool);
-        uint256 cncToMint = poolShares[pool];
+        uint256 cncToMint = checkpoint(pool);
         if (cncToMint == 0) {
             return;
         }
