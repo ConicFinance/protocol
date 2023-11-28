@@ -49,7 +49,7 @@ contract CurveHandler is ICurveHandler {
     // rely on this check for any pool with the `price_oracle` function.
     // We only include the hash codes of pools created through factories, because
     // the bytecode is otherwise slightly different for each pool
-    // Since this is only a optimization for gas purposes, we choose to make this constant,
+    // Since this is only an optimization for gas purposes, we choose to make this constant,
     // even if that means that we might miss this optimization for new factories deployed later.
     bytes32 internal constant ETH_FACTORY_POOL_CODE_HASH_1 =
         0x9e28a09452d2354fc4e15e3244dde27cbc4d52f12a10b91f2ca755b672bfa9be;
