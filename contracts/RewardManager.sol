@@ -395,9 +395,10 @@ contract RewardManager is IRewardManager, Ownable, Initializable {
 
     function setFeePercentage(uint256 _feePercentage) external override onlyOwner {
         require(_feePercentage < MAX_FEE_PERCENTAGE, "cannot set fee percentage to more than 30%");
-        require(locker.totalBoosted() > 0);
+        require(locker.totalBoosted() > 0, "nothing in the locker");
+        require(_feePercentage != feePercentage, "must be different to current");
         feePercentage = _feePercentage;
-        feesEnabled = true;
+        feesEnabled = _feePercentage > 0;
         emit FeesSet(feePercentage);
     }
 
@@ -446,7 +447,7 @@ contract RewardManager is IRewardManager, Ownable, Initializable {
         uint256 integral = meta.earnedIntegral;
         if (_totalSupply > 0) {
             if (deductFee) {
-                integral += earned.divDown(_totalSupply).mulDown(ScaledMath.ONE - feePercentage);
+                integral += earned.mulDown(ScaledMath.ONE - feePercentage).divDown(_totalSupply);
             } else {
                 integral += earned.divDown(_totalSupply);
             }

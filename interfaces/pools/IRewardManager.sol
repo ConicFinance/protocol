@@ -35,4 +35,8 @@ interface IRewardManager {
     function claimEarnings() external returns (uint256, uint256, uint256);
 
     function claimPoolEarningsAndSellRewardTokens() external;
+
+    function feePercentage() external view returns (uint256);
+
+    function feesEnabled() external view returns (bool);
 }

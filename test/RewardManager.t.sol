@@ -7,6 +7,7 @@ import "../interfaces/vendor/IBaseRewardPool.sol";
 import "../interfaces/pools/IRewardManager.sol";
 
 import "../contracts/ConvexHandler.sol";
+import "../contracts/testing/MockBonding.sol";
 
 interface CVXMinter {
     function mint(address to, uint256 amount) external;
@@ -53,6 +54,9 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
         IConicPool.PoolWeight[] memory weights = new IConicPool.PoolWeight[](1);
         weights[0] = IConicPool.PoolWeight(CurvePools.TRI_POOL, 1e18);
         _setWeights(address(conicPool), weights);
+
+        IBonding bonding = new MockBonding();
+        controller.setBonding(address(bonding));
     }
 
     function testInitialState() public {
@@ -423,6 +427,71 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
 
         vm.prank(bb8);
         rewardManager.claimEarnings();
+    }
+
+    function testSetFeePercentage() external {
+        setTokenBalance(r2, Tokens.CNC, 100_000e18);
+        vm.prank(r2);
+        IERC20(Tokens.CNC).approve(address(locker), 100_000e18);
+        vm.prank(r2);
+        locker.lock(10e18, 160 days);
+        rewardManager.setFeePercentage(0.01e18);
+
+        assertTrue(rewardManager.feesEnabled());
+        assertEq(rewardManager.feePercentage(), 0.01e18);
+
+        vm.expectRevert("must be different to current");
+        rewardManager.setFeePercentage(0.01e18);
+
+        rewardManager.setFeePercentage(0.05e18);
+        assertTrue(rewardManager.feesEnabled());
+        assertEq(rewardManager.feePercentage(), 0.05e18);
+
+        rewardManager.setFeePercentage(0);
+        assertFalse(rewardManager.feesEnabled());
+        assertEq(rewardManager.feePercentage(), 0);
+    }
+
+    function testClaimRewardsWithFees() external {
+        setTokenBalance(r2, Tokens.CNC, 100_000e18);
+        vm.prank(r2);
+        IERC20(Tokens.CNC).approve(address(locker), 100_000e18);
+        vm.prank(r2);
+        locker.lock(10e18, 160 days);
+        rewardManager.setFeePercentage(0.01e18);
+
+        assertTrue(rewardManager.feesEnabled());
+
+        uint256 DEPOSIT_AMOUNT = 10_000 * 10 ** underlying.decimals();
+        vm.prank(bb8);
+        underlying.approve(address(conicPool), DEPOSIT_AMOUNT);
+        vm.prank(bb8);
+        conicPool.deposit(DEPOSIT_AMOUNT, 0);
+
+        inflationManager.updatePoolWeights();
+        IBooster(controller.convexBooster()).earmarkRewards(ConvexPid.TRI_POOL);
+
+        vm.warp(block.timestamp + 86400);
+        assertGt(lpTokenStaker.getBalanceForPool(address(conicPool)), 0);
+
+        IBooster(controller.convexBooster()).earmarkRewards(ConvexPid.TRI_POOL);
+        assertGt(convexHandler.getCrvEarnedBatch(address(conicPool), conicPool.allPools()), 0);
+        (uint256 cncBalance, uint256 crvBalance, uint256 cvxBalance) = rewardManager
+            .claimableRewards(bb8);
+        assertGt(cncBalance, 0);
+        assertGt(crvBalance, 0);
+        assertGt(cvxBalance, 0);
+
+        uint256 CRV_BEFORE = IERC20(Tokens.CRV).balanceOf(bb8);
+        uint256 CVX_BEFORE = IERC20(Tokens.CVX).balanceOf(bb8);
+        uint256 CNC_BEFORE = IERC20(Tokens.CNC).balanceOf(bb8);
+
+        vm.prank(bb8);
+        rewardManager.claimEarnings();
+
+        assertEq(IERC20(Tokens.CRV).balanceOf(bb8), CRV_BEFORE + crvBalance);
+        assertEq(IERC20(Tokens.CVX).balanceOf(bb8), CVX_BEFORE + cvxBalance);
+        assertEq(IERC20(Tokens.CNC).balanceOf(bb8), CNC_BEFORE + cncBalance);
     }
 
     function testClaimEarningsWithNewCVXCliff() external {
