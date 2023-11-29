@@ -161,7 +161,7 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         DepositVars memory vars;
 
         // Preparing deposit
-        require(!isShutdown, "pool is shutdown");
+        require(!isShutdown, "pool is shut down");
         require(underlyingAmount > 0, "deposit amount cannot be zero");
         uint256 underlyingPrice_ = controller.priceOracle().getUSDPrice(address(underlying));
         (
@@ -585,7 +585,7 @@ abstract contract BaseConicPool is IConicPool, Pausable {
     }
 
     function shutdownPool() external override onlyController {
-        require(!isShutdown, "pool already shutdown");
+        require(!isShutdown, "pool already shut down");
         isShutdown = true;
         emit Shutdown();
     }
@@ -664,7 +664,7 @@ abstract contract BaseConicPool is IConicPool, Pausable {
 
     /**
      * @notice Allows anyone to set the weight of a Curve pool to 0 if the Convex pool for the
-     * associated PID has been shutdown. This is a very unilkely outcomu and the method does
+     * associated PID has been shutdown. This is a very unilkely outcome and the method does
      * not reenable rebalancing rewards.
      * @param curvePool_ Curve pool for which the Convex PID is invalid (has been shut down)
      */
@@ -674,7 +674,7 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         require(isRegisteredPool(curvePool_), "curve pool not registered");
         ICurveRegistryCache registryCache_ = controller.curveRegistryCache();
         uint256 pid = registryCache_.getPid(curvePool_);
-        require(registryCache_.isShutdownPid(pid), "convex pool pid is shutdown");
+        require(registryCache_.isShutdownPid(pid), "convex pool pid is shut down");
         _setWeightToZero(curvePool_);
         emit HandledInvalidConvexPid(curvePool_, pid);
     }
