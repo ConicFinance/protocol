@@ -25,7 +25,7 @@ contract LpTokenStaker is ILpTokenStaker {
     uint256 public constant MIN_BOOST = 1e18;
     uint256 public constant TIME_STARTING_FACTOR = 1e17;
     uint256 public constant INCREASE_PERIOD = 30 days;
-    uint256 public constant TVL_FACTOR = 50e18;
+    uint256 public constant TVL_FACTOR = 45e18;
 
     mapping(address => mapping(address => uint256)) internal stakedPerUser;
     mapping(address => uint256) internal _stakedPerPool;
