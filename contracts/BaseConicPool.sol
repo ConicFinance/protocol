@@ -190,6 +190,9 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         vars.lpReceived = vars.mintableUnderlyingAmount.divDown(vars.exchangeRate);
         require(vars.lpReceived >= minLpReceived, "too much slippage");
 
+        _cachedTotalUnderlying = vars.underlyingBalanceAfter;
+        _cacheUpdatedTimestamp = block.timestamp;
+
         if (stake) {
             lpToken.mint(address(this), vars.lpReceived, account);
             ILpTokenStaker lpTokenStaker = controller.lpTokenStaker();
@@ -206,9 +209,6 @@ abstract contract BaseConicPool is IConicPool, Pausable {
             vars.allocatedBalanceAfter,
             vars.allocatedPerPoolAfter
         );
-
-        _cachedTotalUnderlying = vars.underlyingBalanceAfter;
-        _cacheUpdatedTimestamp = block.timestamp;
 
         emit Deposit(msg.sender, account, underlyingAmount, vars.lpReceived);
         return vars.lpReceived;
