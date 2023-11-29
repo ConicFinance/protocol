@@ -28,6 +28,7 @@ import "../libraries/ArrayExtensions.sol";
 
 abstract contract BaseConicPool is IConicPool, Pausable {
     using ArrayExtensions for uint256[];
+    using ArrayExtensions for address[];
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableMap for EnumerableMap.AddressToUintMap;
     using SafeERC20 for IERC20;
@@ -58,6 +59,8 @@ abstract contract BaseConicPool is IConicPool, Pausable {
     uint256 internal constant _TOTAL_UNDERLYING_CACHE_EXPIRY = 3 days;
     uint256 internal constant _MAX_USD_VALUE_FOR_REMOVING_POOL = 100e18;
     uint256 internal constant _MAX_CURVE_POOLS = 10;
+    uint256 internal constant _MIN_EMERGENCY_REBALANCING_REWARD_FACTOR = 1e18;
+    uint256 internal constant _MAX_EMERGENCY_REBALANCING_REWARD_FACTOR = 100e18;
 
     IERC20 internal immutable CVX;
     IERC20 internal immutable CRV;
@@ -84,6 +87,17 @@ abstract contract BaseConicPool is IConicPool, Pausable {
 
     /// @dev `true` while the reward distribution is active
     bool public rebalancingRewardActive;
+
+    /// @notice the time at which rebalancing rewards have been activated
+    uint64 public rebalancingRewardsActivatedAt;
+
+    /// @notice The factor by which the rebalancing reward is multiplied when a pool is depegged
+    uint256 public emergencyRebalancingRewardsFactor = 10e18;
+
+    /// @notice The factor by which the rebalancing reward is multiplied
+    /// this is 1 (scaled to 18 decimals) for normal rebalancing situations but is set
+    /// to `emergencyRebalancingRewardsFactor` when a pool is depegged
+    uint256 public rebalancingRewardsFactor;
 
     EnumerableSet.AddressSet internal _pools;
     EnumerableMap.AddressToUintMap internal weights; // liquidity allocation weights
@@ -554,6 +568,8 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         rebalancingRewardActive =
             rebalancingRewardsEnabled &&
             !_isBalanced(allocatedPerPool, totalAllocated);
+        rebalancingRewardsFactor = ScaledMath.ONE;
+        rebalancingRewardsActivatedAt = uint64(block.timestamp);
 
         // Updating price cache for all pools
         // Used for seeing if a pool has depegged
@@ -584,14 +600,15 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         // Validation
         require(isRegisteredPool(curvePool_), "pool is not registered");
         require(weights.get(curvePool_) != 0, "pool weight already 0");
-        require(!_isDepegged(address(underlying)), "underlying is depegged");
-        address lpToken_ = controller.poolAdapterFor(curvePool_).lpToken(curvePool_);
-        require(_isDepegged(lpToken_), "pool is not depegged");
+        require(!_isAssetDepegged(address(underlying)), "underlying is depegged");
+        require(_isPoolDepegged(curvePool_), "pool is not depegged");
 
         // Set target curve pool weight to 0
         // Scale up other weights to compensate
         _setWeightToZero(curvePool_);
         rebalancingRewardActive = rebalancingRewardsEnabled;
+        rebalancingRewardsFactor = emergencyRebalancingRewardsFactor;
+        rebalancingRewardsActivatedAt = uint64(block.timestamp);
 
         emit HandledDepeggedCurvePool(curvePool_);
     }
@@ -716,6 +733,13 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         emit RebalancingRewardsEnabledSet(enabled);
     }
 
+    function setEmergencyRebalancingRewardFactor(uint256 factor_) external onlyOwner {
+        require(factor_ >= _MIN_EMERGENCY_REBALANCING_REWARD_FACTOR, "factor below minimum");
+        require(factor_ <= _MAX_EMERGENCY_REBALANCING_REWARD_FACTOR, "factor above maximum");
+        emergencyRebalancingRewardsFactor = factor_;
+        emit EmergencyRebalancingRewardFactorUpdated(factor_);
+    }
+
     /**
      * @notice Returns several values related to the Omnipools's underlying assets.
      * @param underlyingPrice_ Price of the underlying asset in USD
@@ -824,6 +848,27 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         return true;
     }
 
+    function getAllUnderlyingCoins() public view returns (address[] memory) {
+        uint256 poolsLength_ = _pools.length();
+        address[] memory underlyings_ = new address[](0);
+
+        for (uint256 i; i < poolsLength_; i++) {
+            address pool_ = _pools.at(i);
+            address[] memory coins = controller.poolAdapterFor(pool_).getAllUnderlyingCoins(pool_);
+            underlyings_ = underlyings_.concat(coins);
+        }
+        return underlyings_.removeDuplicates();
+    }
+
+    function _isPoolDepegged(address pool_) internal view returns (bool) {
+        address[] memory coins = controller.poolAdapterFor(pool_).getAllUnderlyingCoins(pool_);
+        for (uint256 i; i < coins.length; i++) {
+            address coin = coins[i];
+            if (_isAssetDepegged(coin)) return true;
+        }
+        return false;
+    }
+
     function _getMaxDeviation() internal view returns (uint256) {
         return rebalancingRewardActive ? 0 : maxDeviation;
     }
@@ -832,5 +877,5 @@ abstract contract BaseConicPool is IConicPool, Pausable {
 
     function _updatePriceCache() internal virtual;
 
-    function _isDepegged(address asset_) internal view virtual returns (bool);
+    function _isAssetDepegged(address asset_) internal view virtual returns (bool);
 }

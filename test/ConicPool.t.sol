@@ -122,6 +122,37 @@ contract ConicPoolTest is ConicPoolBaseTest {
         _checkAllocations();
     }
 
+    function testGetAllUnderlyings() public {
+        address[] memory result = conicPool.getAllUnderlyingCoins();
+        address[] memory expected = new address[](3);
+        expected[0] = Tokens.USDT;
+        expected[1] = Tokens.CRV_USD;
+        expected[2] = Tokens.USDC;
+        assertEq(result, expected);
+
+        conicPool = _createConicPool(
+            controller,
+            rewardsHandler,
+            locker,
+            Tokens.DAI,
+            "Conic DAI",
+            "cncDAI",
+            false
+        );
+
+        conicPool.addPool(CurvePools.FRAX_3CRV);
+        conicPool.addPool(CurvePools.TRI_POOL);
+        conicPool.addPool(CurvePools.SUSD_DAI_USDT_USDC);
+        result = conicPool.getAllUnderlyingCoins();
+        expected = new address[](5);
+        expected[0] = Tokens.FRAX;
+        expected[1] = Tokens.DAI;
+        expected[2] = Tokens.USDC;
+        expected[3] = Tokens.USDT;
+        expected[4] = Tokens.SUSD;
+        assertEq(result, expected);
+    }
+
     function testWithdrawWithV0Pool() public {
         // Changing to DAI Conic Pool so we can test this case
         underlying = IERC20Metadata(Tokens.DAI);
@@ -271,19 +302,34 @@ contract ConicPoolTest is ConicPoolBaseTest {
 
     function testHandleDepeggedPool() public {
         address[] memory pools = conicPool.allPools();
+        conicPool.setRebalancingRewardsEnabled(true);
         address curvePool = pools[0];
         vm.expectRevert("pool is not depegged");
         conicPool.handleDepeggedCurvePool(curvePool);
 
-        address lpToken = controller.curveRegistryCache().lpToken(curvePool);
-        uint256 price = controller.priceOracle().getUSDPrice(lpToken);
+        address lpToken = controller.poolAdapterFor(curvePool).lpToken(curvePool);
+        uint256 lpTokenPrice = controller.priceOracle().getUSDPrice(lpToken);
+        // required to avoid revert in ensurePoolBalanced
         vm.mockCall(
             address(controller.priceOracle()),
             abi.encodeWithSelector(IOracle.getUSDPrice.selector, lpToken),
+            abi.encode(lpTokenPrice)
+        );
+
+        address coin = controller.curveRegistryCache().getAllUnderlyingCoins(curvePool)[0];
+        assertNotEq(coin, address(conicPool.underlying()));
+        uint256 price = controller.priceOracle().getUSDPrice(coin);
+        vm.mockCall(
+            address(controller.priceOracle()),
+            abi.encodeWithSelector(IOracle.getUSDPrice.selector, coin),
             abi.encode((price * 95) / 100)
         );
+        skip(1 hours);
         conicPool.handleDepeggedCurvePool(curvePool);
         assertEq(conicPool.getPoolWeight(curvePool), 0);
+        assertTrue(conicPool.rebalancingRewardActive());
+        assertEq(conicPool.rebalancingRewardsFactor(), 10e18);
+        assertEq(conicPool.rebalancingRewardsActivatedAt(), uint64(block.timestamp));
         _ensureWeightsSumTo1(conicPool);
     }
 

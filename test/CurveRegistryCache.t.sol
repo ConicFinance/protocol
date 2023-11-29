@@ -4,6 +4,8 @@ pragma solidity 0.8.17;
 import "./ConicTest.sol";
 
 contract CurveRegistryCacheTest is ConicTest {
+    using ArrayExtensions for address[];
+
     ICurveRegistryCache public registryCache;
 
     function setUp() public override {
@@ -38,5 +40,16 @@ contract CurveRegistryCacheTest is ConicTest {
         assertEq(registryCache.interfaceVersion(CurvePools.SUSD_DAI_USDT_USDC), 0);
         assertEq(registryCache.interfaceVersion(CurvePools.TRI_POOL), 1);
         assertEq(registryCache.interfaceVersion(CurvePools.CNC_ETH), 2);
+    }
+
+    function testGetAllUnderlyingCoins() public {
+        address[] memory triPoolUnderlying = registryCache.coins(CurvePools.TRI_POOL);
+        assertEq(registryCache.getAllUnderlyingCoins(CurvePools.TRI_POOL), triPoolUnderlying);
+
+        address[] memory frax = new address[](1);
+        frax[0] = Tokens.FRAX;
+        address[] memory frax3CRVUnderlying = frax.concat(triPoolUnderlying);
+
+        assertEq(registryCache.getAllUnderlyingCoins(CurvePools.FRAX_3CRV), frax3CRVUnderlying);
     }
 }

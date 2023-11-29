@@ -128,22 +128,24 @@ contract CNCMintingRebalancingRewardsHandler is
         uint256 deviationAfter
     ) public view override returns (uint256) {
         if (deviationBefore < deviationAfter) return 0;
-        uint8 decimals = IConicPool(conicPool).underlying().decimals();
+        IConicPool pool = IConicPool(conicPool);
+        uint8 decimals = pool.underlying().decimals();
+        uint256 rewardFactor = pool.rebalancingRewardsFactor();
+        uint256 rewardsActivatedAt = pool.rebalancingRewardsActivatedAt();
         uint256 deviationDelta = deviationBefore - deviationAfter;
-        uint256 lastWeightUpdate = controller.lastWeightUpdate(conicPool);
-        uint256 elapsedSinceUpdate = uint256(block.timestamp) - lastWeightUpdate;
+        uint256 elapsed = uint256(block.timestamp) - rewardsActivatedAt;
 
         // We should never enter this condition when the protocol is working normally
         // since we execute weight updates more frequently than the max delay
         uint256 maxElapsedTime = controller.MAX_WEIGHT_UPDATE_MIN_DELAY();
-        if (elapsedSinceUpdate > maxElapsedTime) {
-            elapsedSinceUpdate = maxElapsedTime;
+        if (elapsed > maxElapsedTime) {
+            elapsed = maxElapsedTime;
         }
 
         return
-            (elapsedSinceUpdate * cncRebalancingRewardPerDollarPerSecond).mulDown(
-                deviationDelta.convertScale(decimals, 18)
-            );
+            (elapsed * cncRebalancingRewardPerDollarPerSecond)
+                .mulDown(deviationDelta.convertScale(decimals, 18))
+                .mulDown(rewardFactor);
     }
 
     function rebalance(

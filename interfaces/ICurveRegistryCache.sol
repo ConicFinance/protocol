@@ -48,4 +48,10 @@ interface ICurveRegistryCache {
     function getRewardPool(address _pool) external view returns (address);
 
     function isShutdownPid(uint256 pid_) external view returns (bool);
+
+    /// @notice this returns the underlying coins of a pool, including the underlying of the base pool
+    /// if the given pool is a meta pool
+    /// This does not return the LP token of the base pool as an underlying
+    /// e.g. if the pool is 3CrvFrax, this will return FRAX, DAI, USDC, USDT
+    function getAllUnderlyingCoins(address pool) external view returns (address[] memory);
 }
