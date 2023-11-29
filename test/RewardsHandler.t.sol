@@ -24,6 +24,7 @@ contract RewardsHandlerTest is ConicPoolBaseTest {
             false
         );
 
+        conicPool.setRebalancingRewardsEnabled(true);
         conicPool.addPool(CurvePools.FRAX_3CRV);
         conicPool.addPool(CurvePools.TRI_POOL);
 

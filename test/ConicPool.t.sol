@@ -174,7 +174,30 @@ contract ConicPoolTest is ConicPoolBaseTest {
         _setWeights(address(conicPool), newWeights);
     }
 
+    function testRebalanceWithRewardsDisabled() public {
+        assertFalse(conicPool.rebalancingRewardsEnabled());
+        vm.startPrank(bb8);
+        underlying.approve(address(conicPool), 100_000 * 10 ** decimals);
+
+        conicPool.deposit(10_000 * 10 ** decimals, 1);
+        vm.stopPrank();
+
+        skip(14 days);
+
+        IConicPool.PoolWeight[] memory newWeights = new IConicPool.PoolWeight[](2);
+        newWeights[0] = IConicPool.PoolWeight(CurvePools.CRVUSD_USDT, 0.8e18);
+        newWeights[1] = IConicPool.PoolWeight(CurvePools.CRVUSD_USDC, 0.2e18);
+        _setWeights(address(conicPool), newWeights);
+
+        skip(1 hours);
+
+        assertFalse(conicPool.rebalancingRewardActive());
+    }
+
     function testRebalance() public {
+        conicPool.setRebalancingRewardsEnabled(true);
+        assertTrue(conicPool.rebalancingRewardsEnabled());
+
         vm.startPrank(bb8);
         underlying.approve(address(conicPool), 100_000 * 10 ** decimals);
 
