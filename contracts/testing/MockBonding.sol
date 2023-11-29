@@ -10,6 +10,8 @@ contract MockBonding is IBonding {
 
     function setCncPriceIncreaseFactor(uint256 _priceIncreaseFactor) external override {}
 
+    function setMinBondingAmount(uint256 _minBondingAmount) external override {}
+
     function setDebtPool(address _debtPool) external override {}
 
     function bondCncCrvUsd(

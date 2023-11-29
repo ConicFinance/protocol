@@ -344,4 +344,19 @@ contract BondingTest is ConicPoolBaseTest {
             0.01e18
         );
     }
+
+    function testMinBondingAmount() public {
+        bonding.setMinBondingAmount(500e18);
+
+        // get LP tokens and don't stake
+        vm.startPrank(address(bb8));
+        underlying.approve(address(crvusdPool), 100_000 * 10 ** decimals);
+        crvusdPool.deposit(10_000 * 10 ** decimals, 1, false);
+        uint256 lpReceived = crvusdPool.lpToken().balanceOf(bb8);
+        assertApproxEqRel(10_000 * 10 ** decimals, lpReceived, 0.01e18);
+        crvusdPool.lpToken().approve(address(bonding), 10_000 * 10 ** decimals);
+
+        vm.expectRevert("Min. bonding amount not reached");
+        bonding.bondCncCrvUsd(300 * 10 ** decimals, 290e18, 180 days);
+    }
 }
