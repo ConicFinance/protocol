@@ -126,6 +126,7 @@ contract Controller is IController, Ownable, Initializable {
     }
 
     function setCurveHandler(address _curveHandler) external override onlyOwner {
+        require(_curveHandler != curveHandler, "same curve handler");
         curveHandler = _curveHandler;
         emit CurveHandlerSet(_curveHandler);
     }
