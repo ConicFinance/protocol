@@ -341,11 +341,18 @@ contract ConicPoolTest is ConicPoolBaseTest {
         _setWeights(address(conicPool), newWeights);
 
         address lpToken = controller.curveRegistryCache().lpToken(CurvePools.CRVUSD_USDT);
-        uint256 price = controller.priceOracle().getUSDPrice(lpToken);
+        uint256 price = controller.priceOracle().getUSDPrice(Tokens.USDT);
+        uint256 lpTokenPrice = controller.priceOracle().getUSDPrice(lpToken);
+
+        vm.mockCall(
+            address(controller.priceOracle()),
+            abi.encodeWithSelector(IOracle.getUSDPrice.selector),
+            abi.encode((price * 96) / 100)
+        );
         vm.mockCall(
             address(controller.priceOracle()),
             abi.encodeWithSelector(IOracle.getUSDPrice.selector, lpToken),
-            abi.encode((price * 95) / 100)
+            abi.encode((lpTokenPrice * 96) / 100)
         );
         conicPool.handleDepeggedCurvePool(CurvePools.CRVUSD_USDT);
         assertEq(conicPool.getPoolWeight(CurvePools.CRVUSD_USDT), 0);
