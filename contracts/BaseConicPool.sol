@@ -593,6 +593,7 @@ abstract contract BaseConicPool is IConicPool, Pausable {
     function updateDepegThreshold(uint256 newDepegThreshold_) external onlyOwner {
         require(newDepegThreshold_ >= _MIN_DEPEG_THRESHOLD, "invalid depeg threshold");
         require(newDepegThreshold_ <= _MAX_DEPEG_THRESHOLD, "invalid depeg threshold");
+        require(newDepegThreshold_ != depegThreshold, "same as current");
         depegThreshold = newDepegThreshold_;
         emit DepegThresholdUpdated(newDepegThreshold_);
     }
