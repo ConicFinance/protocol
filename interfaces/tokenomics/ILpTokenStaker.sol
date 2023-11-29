@@ -35,4 +35,6 @@ interface ILpTokenStaker {
     function shutdown() external;
 
     function getBoost(address user) external view returns (uint256);
+
+    function isShutdown() external view returns (bool);
 }

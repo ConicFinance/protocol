@@ -100,8 +100,10 @@ contract LpTokenStaker is ILpTokenStaker {
         require(controller.isPool(msg.sender), "only callable from conic pool");
         require(stakedPerUser[account][msg.sender] >= amount, "not enough staked");
         // Checkpoint all inflation logic
-        IConicPool(msg.sender).rewardManager().accountCheckpoint(account);
-        _stakerCheckpoint(account, 0);
+        if (!isShutdown) {
+            IConicPool(msg.sender).rewardManager().accountCheckpoint(account);
+            _stakerCheckpoint(account, 0);
+        }
         // Actual unstaking
         stakedPerUser[account][msg.sender] -= amount;
         _stakedPerPool[msg.sender] -= amount;
