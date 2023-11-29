@@ -17,10 +17,12 @@ contract SimpleAccessControl is ISimpleAccessControl {
 
     function _grantRole(bytes32 role, address account) internal {
         roles[role].add(account);
+        emit RoleGranted(role, account);
     }
 
     function _revokeRole(bytes32 role, address account) internal {
         roles[role].remove(account);
+        emit RoleRevoked(role, account);
     }
 
     function hasRole(bytes32 role, address account) public view override returns (bool) {

@@ -43,6 +43,8 @@ interface IAggregatorV3Interface {
 }
 
 contract ChainlinkOracle is IOracle, Ownable {
+    event HeartbeatUpdated(uint256 heartbeat);
+
     uint256 public heartbeat = 24 hours;
 
     FeedRegistryInterface internal constant _feedRegistry =
@@ -55,6 +57,7 @@ contract ChainlinkOracle is IOracle, Ownable {
         require(heartbeat_ >= _MIN_HEARTBEAT, "heartbeat too low");
         require(heartbeat_ != heartbeat, "same as current");
         heartbeat = heartbeat_;
+        emit HeartbeatUpdated(heartbeat_);
     }
 
     function isTokenSupported(address token) external view override returns (bool) {
