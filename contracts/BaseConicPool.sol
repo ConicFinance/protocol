@@ -627,9 +627,19 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         require(weight_ != ScaledMath.ONE, "can't remove last pool");
         uint256 scaleUp_ = ScaledMath.ONE.divDown(ScaledMath.ONE - weights.get(zeroedPool));
         uint256 curvePoolLength_ = _pools.length();
+
+        uint256 totalWeight;
         for (uint256 i; i < curvePoolLength_; i++) {
             address pool_ = _pools.at(i);
             uint256 newWeight_ = pool_ == zeroedPool ? 0 : weights.get(pool_).mulDown(scaleUp_);
+            // ensure that the sum of the weights is 1 despite potential rounding errors
+            if (
+                ((pool_ != zeroedPool) && i == curvePoolLength_ - 1) ||
+                (i == curvePoolLength_ - 2 && _pools.at(i + 1) == zeroedPool)
+            ) {
+                newWeight_ = ScaledMath.ONE - totalWeight;
+            }
+            totalWeight += newWeight_;
             weights.set(pool_, newWeight_);
             emit NewWeight(pool_, newWeight_);
         }

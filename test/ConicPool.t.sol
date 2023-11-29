@@ -333,6 +333,25 @@ contract ConicPoolTest is ConicPoolBaseTest {
         _ensureWeightsSumTo1(conicPool);
     }
 
+    function testHandleDepeggedPoolSumTo1() public {
+        IConicPool.PoolWeight[] memory newWeights = new IConicPool.PoolWeight[](2);
+        newWeights[0] = IConicPool.PoolWeight(CurvePools.CRVUSD_USDT, 666666666666666667);
+        newWeights[1] = IConicPool.PoolWeight(CurvePools.CRVUSD_USDC, 333333333333333333);
+        skip(14 days);
+        _setWeights(address(conicPool), newWeights);
+
+        address lpToken = controller.curveRegistryCache().lpToken(CurvePools.CRVUSD_USDT);
+        uint256 price = controller.priceOracle().getUSDPrice(lpToken);
+        vm.mockCall(
+            address(controller.priceOracle()),
+            abi.encodeWithSelector(IOracle.getUSDPrice.selector, lpToken),
+            abi.encode((price * 95) / 100)
+        );
+        conicPool.handleDepeggedCurvePool(CurvePools.CRVUSD_USDT);
+        assertEq(conicPool.getPoolWeight(CurvePools.CRVUSD_USDT), 0);
+        _ensureWeightsSumTo1(conicPool);
+    }
+
     function testRemovePool() public {
         vm.prank(bb8);
         underlying.approve(address(conicPool), 100_000 * 10 ** decimals);
