@@ -409,14 +409,17 @@ contract CNCLockerV3 is ICNCLockerV3, Ownable {
 
     function _feeCheckpoint(address account) internal {
         uint256 boost_ = lockedBoosted[account];
+        uint256 accruedFeesIntegralCrv_ = accruedFeesIntegralCrv;
+        uint256 accruedFeesIntegralCvx_ = accruedFeesIntegralCvx;
+
         perAccountFeesCrv[account] += boost_.mulDown(
-            accruedFeesIntegralCrv - perAccountAccruedCrv[account]
+            accruedFeesIntegralCrv_ - perAccountAccruedCrv[account]
         );
-        perAccountAccruedCrv[account] = accruedFeesIntegralCrv;
+        perAccountAccruedCrv[account] = accruedFeesIntegralCrv_;
         perAccountFeesCvx[account] += boost_.mulDown(
-            accruedFeesIntegralCvx - perAccountAccruedCvx[account]
+            accruedFeesIntegralCvx_ - perAccountAccruedCvx[account]
         );
-        perAccountAccruedCvx[account] = accruedFeesIntegralCvx;
+        perAccountAccruedCvx[account] = accruedFeesIntegralCvx_;
 
         // bonding stream
         IBonding bonding = controller.bonding();
