@@ -405,7 +405,6 @@ contract RewardManager is IRewardManager, Ownable, Initializable {
         address account
     ) external view returns (uint256 cncRewards, uint256 crvRewards, uint256 cvxRewards) {
         uint256 _totalStaked = controller.lpTokenStaker().getBalanceForPool(conicPool);
-        if (_totalStaked == 0) return (0, 0, 0);
         (uint256 crvEarned, uint256 cvxEarned, uint256 cncEarned) = _getEarnedRewards();
         uint256 userBalance = controller.lpTokenStaker().getUserBalanceForPool(conicPool, account);
 
@@ -445,10 +444,12 @@ contract RewardManager is IRewardManager, Ownable, Initializable {
     ) internal view returns (uint256) {
         RewardMeta storage meta = _rewardsMeta[key];
         uint256 integral = meta.earnedIntegral;
-        if (deductFee) {
-            integral += earned.divDown(_totalSupply).mulDown(ScaledMath.ONE - feePercentage);
-        } else {
-            integral += earned.divDown(_totalSupply);
+        if (_totalSupply > 0) {
+            if (deductFee) {
+                integral += earned.divDown(_totalSupply).mulDown(ScaledMath.ONE - feePercentage);
+            } else {
+                integral += earned.divDown(_totalSupply);
+            }
         }
         return
             meta.accountShare[account] +
