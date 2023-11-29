@@ -43,7 +43,7 @@ contract ConicEthPool is BaseConicPool {
         return priceDiffPercent_ > depegThreshold;
     }
 
-    function _sanityChecks() internal override {
+    function runSanityChecks() public override {
         ICurveRegistryCache curveRegistryCache = controller.curveRegistryCache();
         for (uint256 i; i < _pools.length(); i++) {
             address pool_ = _pools.at(i);
