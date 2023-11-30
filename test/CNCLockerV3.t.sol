@@ -22,12 +22,6 @@ contract CNCLockerV3Test is ConicTest {
         vm.prank(bb8);
         cnc.approve(address(locker), 100_000e18);
 
-        vm.mockCall(
-            locker.V2_LOCKER(),
-            abi.encodeWithSelector(IERC20.balanceOf.selector),
-            abi.encode(0)
-        );
-
         IBonding bonding = new MockBonding();
         controller.setBonding(address(bonding));
     }
