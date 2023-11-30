@@ -22,7 +22,6 @@ contract ConicEthPoolTest is ConicPoolBaseTest {
         conicPool = _createConicPool(
             controller,
             rewardsHandler,
-            locker,
             address(underlying),
             "Conic ETH",
             "cncETH",
@@ -184,7 +183,7 @@ contract ConicEthPoolTest is ConicPoolBaseTest {
     function testHandleInvalidConvexPid() public {
         address[] memory pools = conicPool.allPools();
         address curvePool = pools[0];
-        vm.expectRevert("convex pool pid is shutdown");
+        vm.expectRevert("convex pool pid is shut down");
         conicPool.handleInvalidConvexPid(curvePool);
         uint256 pid = controller.curveRegistryCache().getPid(curvePool);
         vm.mockCall(
@@ -352,7 +351,7 @@ contract ConicEthPoolTest is ConicPoolBaseTest {
         assertTrue(conicPool.isShutdown());
 
         vm.prank(bb8);
-        vm.expectRevert("pool is shutdown");
+        vm.expectRevert("pool is shut down");
         conicPool.deposit(10 * 10 ** decimals, 1, false);
 
         uint256 balanceBeforeWithdraw = underlying.balanceOf(bb8);

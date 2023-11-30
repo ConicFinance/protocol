@@ -256,7 +256,6 @@ contract ProtocolIntegrationTest is ConicPoolBaseTest {
         daiPool = _createConicPool(
             controller,
             rewardsHandler,
-            locker,
             Tokens.DAI,
             "Conic DAI",
             "cncDAI",
@@ -279,7 +278,6 @@ contract ProtocolIntegrationTest is ConicPoolBaseTest {
         usdcPool = _createConicPool(
             controller,
             rewardsHandler,
-            locker,
             Tokens.WETH,
             "Conic ETH",
             "cncETH",
@@ -300,7 +298,6 @@ contract ProtocolIntegrationTest is ConicPoolBaseTest {
         usdcPool = _createConicPool(
             controller,
             rewardsHandler,
-            locker,
             Tokens.USDC,
             "Conic USDC",
             "cncUSDC",
@@ -325,7 +322,6 @@ contract ProtocolIntegrationTest is ConicPoolBaseTest {
         fraxPool = _createConicPool(
             controller,
             rewardsHandler,
-            locker,
             Tokens.FRAX,
             "Conic FRAX",
             "cncFRAX",
@@ -346,7 +342,6 @@ contract ProtocolIntegrationTest is ConicPoolBaseTest {
         usdtPool = _createConicPool(
             controller,
             rewardsHandler,
-            locker,
             Tokens.USDT,
             "Conic USDT",
             "cncUSDT",
@@ -366,7 +361,6 @@ contract ProtocolIntegrationTest is ConicPoolBaseTest {
         crvUsdPool = _createConicPool(
             controller,
             rewardsHandler,
-            locker,
             Tokens.CRV_USD,
             "Conic Curve USD",
             "cncCRVUSD",

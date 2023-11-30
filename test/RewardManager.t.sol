@@ -35,7 +35,6 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
         conicPool = _createConicPool(
             controller,
             rewardsHandler,
-            locker,
             address(underlying),
             "Conic DAI",
             "cncDAI",
@@ -430,6 +429,7 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
     }
 
     function testSetFeePercentage() external {
+        controller.setFeeRecipient(address(locker));
         setTokenBalance(r2, Tokens.CNC, 100_000e18);
         vm.prank(r2);
         IERC20(Tokens.CNC).approve(address(locker), 100_000e18);
@@ -453,6 +453,7 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
     }
 
     function testClaimRewardsWithFees() external {
+        controller.setFeeRecipient(address(locker));
         setTokenBalance(r2, Tokens.CNC, 100_000e18);
         vm.prank(r2);
         IERC20(Tokens.CNC).approve(address(locker), 100_000e18);

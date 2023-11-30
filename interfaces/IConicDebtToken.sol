@@ -4,7 +4,7 @@ pragma solidity 0.8.17;
 import "../libraries/MerkleProof.sol";
 
 interface IConicDebtToken {
-    event ClaimPoolSet(address claimPool);
+    event DebtPoolSet(address claimPool);
     event RefundClaimed(address claimant, uint256 amount);
     event ClaimingStarted();
     event DebtTokenClaimed(address claimant, uint256 amount);
@@ -24,7 +24,7 @@ interface IConicDebtToken {
         MerkleProof.Proof calldata proofRefund
     ) external;
 
-    function setClaimPool(address claimPool) external;
+    function setDebtPool(address claimPool) external;
 
-    function burn(uint256 amount) external;
+    function burn(address account, uint256 amount) external;
 }

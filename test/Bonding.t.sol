@@ -18,7 +18,6 @@ contract BondingTest is ConicPoolBaseTest {
         crvusdPool = _createConicPool(
             controller,
             rewardsHandler,
-            locker,
             address(underlying),
             "Conic crvUSD",
             "cncCRVUSD",
@@ -358,5 +357,30 @@ contract BondingTest is ConicPoolBaseTest {
 
         vm.expectRevert("Min. bonding amount not reached");
         bonding.bondCncCrvUsd(300 * 10 ** decimals, 290e18, 180 days);
+    }
+
+    function testRewardTokensGoToClaimPool() public {
+        bonding.setDebtPool(address(c3po));
+
+        vm.startPrank(address(bb8));
+        // get LP tokens and don't stake
+        underlying.approve(address(crvusdPool), 100_000 * 10 ** decimals);
+        crvusdPool.deposit(50_000 * 10 ** decimals, 1, false);
+        crvusdPool.lpToken().approve(address(bonding), 50_000 * 10 ** decimals);
+
+        bonding.bondCncCrvUsd(1_000 * 10 ** decimals, 490e18, 180 days);
+
+        assertApproxEqRel(
+            bonding.assetsInEpoch(bonding.epochStartTime() + bonding.epochDuration()),
+            1000e18,
+            0.01e18
+        );
+
+        skip(10.5 days);
+
+        bonding.claimFeesForDebtPool();
+
+        assertGt(IERC20(Tokens.CRV).balanceOf(address(c3po)), 0);
+        assertGt(IERC20(Tokens.CVX).balanceOf(address(c3po)), 0);
     }
 }

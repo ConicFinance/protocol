@@ -103,7 +103,7 @@ contract InflationRedirectionPoolTest is Test {
         assertApproxEqRel(totalSupply3 - totalSupply2, currentInflationRate * 86400 * 2, 1e16);
 
         skip(3 days);
-        vm.expectRevert("InflationRedirectionPool: pool is shutdown");
+        vm.expectRevert("InflationRedirectionPool: pool is shut down");
         vm.prank(MainnetAddresses.MULTISIG);
         redirectionPool.shutdown();
         assertEq(totalSupply3, CNC.totalSupply());

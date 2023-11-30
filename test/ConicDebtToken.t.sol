@@ -151,7 +151,7 @@ contract ConicDebtTokenTest is ConicTest {
         assertEq(IERC20(Tokens.CRVUSD).balanceOf(bb8), 100000000000000000000000);
     }
 
-    function testBurnOnlyClaimPool() public {
+    function testBurnOnlyDebtPool() public {
         vm.startPrank(bb8);
 
         conicDebtToken.start();
@@ -164,9 +164,9 @@ contract ConicDebtTokenTest is ConicTest {
         conicDebtToken.claimDebtToken(400000000000000000000000, proof);
 
         vm.expectRevert();
-        conicDebtToken.burn(400000000000000000000000);
+        conicDebtToken.burn(address(bb8), 400000000000000000000000);
 
-        conicDebtToken.setClaimPool(bb8);
-        conicDebtToken.burn(400000000000000000000000);
+        conicDebtToken.setDebtPool(bb8);
+        conicDebtToken.burn(address(bb8), 400000000000000000000000);
     }
 }

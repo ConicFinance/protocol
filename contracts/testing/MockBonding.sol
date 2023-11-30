@@ -28,6 +28,8 @@ contract MockBonding is IBonding {
 
     function streamCheckpoint() external override {}
 
+    function claimFeesForDebtPool() external override {}
+
     function checkpointAccount(address account) external override {}
 
     function computeCurrentCncBondPrice() external view override returns (uint256) {

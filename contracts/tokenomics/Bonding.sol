@@ -179,6 +179,19 @@ contract Bonding is IBonding, Ownable {
         emit StreamClaimed(msg.sender, amount);
     }
 
+    function claimFeesForDebtPool() external override {
+        require(address(debtPool) != address(0), "No debt pool set");
+        uint256 cncBefore = CNC.balanceOf(address(this));
+        crvUsdPool.rewardManager().claimEarnings();
+        uint256 cncAmount = CNC.balanceOf(address(this)) - cncBefore;
+        uint256 crvAmount = CRV.balanceOf(address(this));
+        uint256 cvxAmount = CVX.balanceOf(address(this));
+        CRV.safeTransfer(address(debtPool), crvAmount);
+        CVX.safeTransfer(address(debtPool), cvxAmount);
+        CNC.safeTransfer(address(debtPool), cncAmount);
+        emit DebtPoolFeesClaimed(crvAmount, cvxAmount, cncAmount);
+    }
+
     function recoverRemainingCNC() external override onlyOwner {
         require(block.timestamp > bondingEndTime, "Bonding has not yet ended");
         uint256 amount = CNC.balanceOf(address(this));
