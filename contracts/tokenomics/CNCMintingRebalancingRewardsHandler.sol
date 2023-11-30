@@ -115,7 +115,7 @@ contract CNCMintingRebalancingRewardsHandler is
 
     /// @dev this computes how much CNC a user should get when depositing
     /// this does not check whether the rewards should still be distributed
-    /// amount CNC = t * CNC/s * (1 - (Δdeviation / initialDeviation))
+    /// amount CNC = t * CNC/s * Δdeviation * rewardFactor * underlying price
     /// where
     /// CNC/s: the amount of CNC per second to distributed for rebalancing
     /// t: the time elapsed since the weight update
