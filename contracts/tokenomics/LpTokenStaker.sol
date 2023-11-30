@@ -75,7 +75,7 @@ contract LpTokenStaker is ILpTokenStaker {
         // Actual staking
         lpToken.safeTransferFrom(msg.sender, address(this), amount);
         if (!controller.isPool(msg.sender)) {
-            lpToken.taint(msg.sender, account);
+            lpToken.taint(msg.sender, account, amount);
         }
         stakedPerUser[account][conicPool] += amount;
         _stakedPerPool[conicPool] += amount;
@@ -93,7 +93,7 @@ contract LpTokenStaker is ILpTokenStaker {
         stakedPerUser[msg.sender][conicPool] -= amount;
         _stakedPerPool[conicPool] -= amount;
         IConicPool(conicPool).lpToken().safeTransfer(account, amount);
-        IConicPool(conicPool).lpToken().taint(msg.sender, account);
+        IConicPool(conicPool).lpToken().taint(msg.sender, account, amount);
     }
 
     function unstakeFrom(uint256 amount, address account) public override {

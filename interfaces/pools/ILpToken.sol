@@ -10,5 +10,5 @@ interface ILpToken is IERC20Metadata {
 
     function burn(address _owner, uint256 _amount, address ubo) external returns (uint256);
 
-    function taint(address from, address to) external;
+    function taint(address from, address to, uint256 amount) external;
 }
