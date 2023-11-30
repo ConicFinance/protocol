@@ -45,7 +45,7 @@ contract InflationRedirectionPool {
     }
 
     function shutdown() external {
-        require(!isShutdown, "InflationRedirectionPool: pool is shutdown");
+        require(!isShutdown, "InflationRedirectionPool: pool is shut down");
         require(
             msg.sender == CONIC_MULTISIG,
             "InflationRedirectionPool: only multisig can shutdown"
@@ -56,7 +56,7 @@ contract InflationRedirectionPool {
     }
 
     function poolCheckpoint() public returns (bool) {
-        require(!isShutdown, "InflationRedirectionPool: pool is shutdown");
+        require(!isShutdown, "InflationRedirectionPool: pool is shut down");
         uint256 balanceBefore = CNC.balanceOf(address(this));
         controller.lpTokenStaker().claimCNCRewardsForPool(address(this));
         emit Claim(CNC.balanceOf(address(this)) - balanceBefore);

@@ -34,7 +34,7 @@ contract CNCDistributor is ICNCDistributor, Ownable {
     }
 
     function topUpGauge() public override {
-        require(!isShutdown, "contract is shutdown");
+        require(!isShutdown, "contract is shut down");
         uint256 gaugeInflationRate = gaugeInflationShare.mulDown(currentInflationRate);
 
         (, , uint256 periodFinish, , , ) = CNC_ETH_GAUGE.reward_data(address(CNC));
@@ -55,7 +55,7 @@ contract CNCDistributor is ICNCDistributor, Ownable {
     }
 
     function donate(uint256 amount) external override {
-        require(!isShutdown, "contract is shutdown");
+        require(!isShutdown, "contract is shut down");
         CNC.safeTransferFrom(msg.sender, address(this), amount);
     }
 

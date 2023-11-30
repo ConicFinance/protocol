@@ -288,17 +288,12 @@ contract ConicTest is Test {
     function _createConicPool(
         Controller controller,
         CNCMintingRebalancingRewardsHandler rebalancingRewardsHandler,
-        CNCLockerV3 locker,
         address underlying,
         string memory name,
         string memory symbol,
         bool isETH
     ) internal returns (IConicPool) {
-        RewardManager rewardManager = new RewardManager(
-            address(controller),
-            underlying,
-            address(locker)
-        );
+        RewardManager rewardManager = new RewardManager(address(controller), underlying);
         IConicPool pool;
         if (isETH) {
             pool = new ConicEthPool(

@@ -119,7 +119,7 @@ contract CurveRegistryCache is ICurveRegistryCache {
     function _setConvexPid(address pool_, address lpToken_, uint256 pid_) internal {
         (address curveToken, , , address rewardPool_, , bool _isShutdown) = BOOSTER.poolInfo(pid_);
         require(lpToken_ == curveToken, "invalid lp token for curve pool");
-        require(!_isShutdown, "convex pool is shutdown");
+        require(!_isShutdown, "convex pool is shut down");
         require(rewardPool_ != address(0), "no convex pid found");
         _convexRewardPool[pool_] = rewardPool_;
         _convexPid[pool_] = pid_;

@@ -11,6 +11,7 @@ import "../libraries/ScaledMath.sol";
 import "../interfaces/IController.sol";
 import "../interfaces/tokenomics/ILpTokenStaker.sol";
 import "../interfaces/IPoolAdapter.sol";
+import "../interfaces/IFeeRecipient.sol";
 import "../interfaces/pools/ILpToken.sol";
 import "../interfaces/vendor/IBooster.sol";
 import "../interfaces/tokenomics/IBonding.sol";
@@ -42,6 +43,7 @@ contract Controller is IController, Ownable, Initializable {
     IInflationManager public override inflationManager;
     ILpTokenStaker public override lpTokenStaker;
     IBonding public override bonding;
+    IFeeRecipient public override feeRecipient;
 
     mapping(address => IPoolAdapter) internal _customPoolAdapters;
     IPoolAdapter public override defaultPoolAdapter;
@@ -169,6 +171,12 @@ contract Controller is IController, Ownable, Initializable {
     function setBonding(address _bonding) external override onlyOwner {
         bonding = IBonding(_bonding);
         emit BondingSet(_bonding);
+    }
+
+    function setFeeRecipient(address _feeRecipient) external override onlyOwner {
+        require(address(_feeRecipient) != address(0), "cannot set to zero address");
+        feeRecipient = IFeeRecipient(_feeRecipient);
+        emit FeeRecipientSet(_feeRecipient);
     }
 
     function setWeightUpdateMinDelay(uint256 delay) external override onlyOwner {

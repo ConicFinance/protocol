@@ -15,7 +15,6 @@ import "../interfaces/IController.sol";
 import "../interfaces/IOracle.sol";
 import "../interfaces/tokenomics/IInflationManager.sol";
 import "../interfaces/tokenomics/ILpTokenStaker.sol";
-import "../interfaces/tokenomics/ICNCLockerV3.sol";
 import "../interfaces/vendor/ICurvePoolV2.sol";
 import "../interfaces/vendor/UniswapRouter02.sol";
 
@@ -53,7 +52,6 @@ contract RewardManager is IRewardManager, Ownable, Initializable {
     address public override conicPool;
     IERC20 public immutable underlying;
     IController public immutable controller;
-    ICNCLockerV3 public immutable locker;
     bool internal _claimingCNC;
 
     EnumerableSet.AddressSet internal _extraRewards;
@@ -64,11 +62,10 @@ contract RewardManager is IRewardManager, Ownable, Initializable {
     bool public feesEnabled;
     uint256 public feePercentage;
 
-    constructor(address _controller, address _underlying, address cncLocker) {
+    constructor(address _controller, address _underlying) {
         underlying = IERC20(_underlying);
         controller = IController(_controller);
         WETH.safeApprove(address(CNC_ETH_POOL), type(uint256).max);
-        locker = ICNCLockerV3(cncLocker);
     }
 
     function initialize(address _pool) external onlyOwner initializer {
@@ -131,10 +128,11 @@ contract RewardManager is IRewardManager, Ownable, Initializable {
         CRV.safeTransferFrom(conicPool, address(this), crvFee);
         CVX.safeTransferFrom(conicPool, address(this), cvxFee);
 
-        // Fee transfer to the CNC locker
-        CRV.forceApprove(address(locker), crvFee);
-        CVX.forceApprove(address(locker), cvxFee);
-        locker.receiveFees(crvFee, cvxFee);
+        // Fee transfer to the fee recipient
+        IFeeRecipient _feeRecipient = controller.feeRecipient();
+        CRV.forceApprove(address(_feeRecipient), crvFee);
+        CVX.forceApprove(address(_feeRecipient), cvxFee);
+        _feeRecipient.receiveFees(crvFee, cvxFee);
 
         return rewardsClaimed;
     }
@@ -395,8 +393,8 @@ contract RewardManager is IRewardManager, Ownable, Initializable {
 
     function setFeePercentage(uint256 _feePercentage) external override onlyOwner {
         require(_feePercentage < MAX_FEE_PERCENTAGE, "cannot set fee percentage to more than 30%");
-        require(locker.totalBoosted() > 0, "nothing in the locker");
         require(_feePercentage != feePercentage, "must be different to current");
+        require(address(controller.feeRecipient()) != address(0), "fee recipient not set");
         feePercentage = _feePercentage;
         feesEnabled = _feePercentage > 0;
         emit FeesSet(feePercentage);

@@ -17,7 +17,6 @@ contract RewardsHandlerTest is ConicPoolBaseTest {
         conicPool = _createConicPool(
             controller,
             rewardsHandler,
-            locker,
             address(underlying),
             "Conic DAI",
             "cncDAI",

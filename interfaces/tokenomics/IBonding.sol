@@ -12,7 +12,7 @@ interface IBonding {
         uint256 lockTime
     );
     event DebtPoolSet(address indexed pool);
-    event DebtPoolFeesClaimed(address indexed pool, uint256 amount);
+    event DebtPoolFeesClaimed(uint256 crvAmount, uint256 cvxAmount, uint256 cncAmount);
     event StreamClaimed(address indexed account, uint256 amount);
     event BondingStarted(uint256 amount, uint256 epochs);
     event RemainingCNCRecovered(uint256 amount);
@@ -36,6 +36,8 @@ interface IBonding {
     function recoverRemainingCNC() external;
 
     function claimStream() external;
+
+    function claimFeesForDebtPool() external;
 
     function streamCheckpoint() external;
 

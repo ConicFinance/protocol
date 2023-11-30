@@ -2,13 +2,13 @@
 pragma solidity 0.8.17;
 
 import "../../libraries/MerkleProof.sol";
+import "../IFeeRecipient.sol";
 
-interface ICNCLockerV3 {
+interface ICNCLockerV3 is IFeeRecipient {
     event Locked(address indexed account, uint256 amount, uint256 unlockTime, bool relocked);
     event UnlockExecuted(address indexed account, uint256 amount);
     event Relocked(address indexed account, uint256 amount);
     event KickExecuted(address indexed account, address indexed kicker, uint256 amount);
-    event FeesReceived(address indexed sender, uint256 crvAmount, uint256 cvxAmount);
     event FeesClaimed(address indexed claimer, uint256 crvAmount, uint256 cvxAmount);
     event AirdropBoostClaimed(address indexed claimer, uint256 amount);
     event Shutdown();
@@ -62,8 +62,6 @@ interface ICNCLockerV3 {
     function kick(address user, uint64 lockId) external;
 
     function batchKick(LockId[] memory locks) external;
-
-    function receiveFees(uint256 amountCrv, uint256 amountCvx) external;
 
     function claimableFees(
         address account

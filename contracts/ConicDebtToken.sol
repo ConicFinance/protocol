@@ -23,7 +23,7 @@ contract ConicDebtToken is IConicDebtToken, ERC20, Ownable {
 
     uint256 public startAt;
     bool public claimIsActive;
-    address public claimPool;
+    address public debtPool;
 
     constructor(
         bytes32 _merkleRootDebtToken,
@@ -89,13 +89,14 @@ contract ConicDebtToken is IConicDebtToken, ERC20, Ownable {
         claimedBy[msg.sender] = true;
     }
 
-    function setClaimPool(address _claimPool) external onlyOwner {
-        claimPool = _claimPool;
-        emit ClaimPoolSet(_claimPool);
+    function setDebtPool(address _debtPool) external onlyOwner {
+        require(debtPool == address(0), "Claim pool already set");
+        debtPool = _debtPool;
+        emit DebtPoolSet(_debtPool);
     }
 
-    function burn(uint256 amount) external override {
-        require(msg.sender == claimPool, "invalid burner");
-        _burn(msg.sender, amount);
+    function burn(address account, uint256 amount) external override {
+        require(msg.sender == debtPool, "invalid burner");
+        _burn(account, amount);
     }
 }

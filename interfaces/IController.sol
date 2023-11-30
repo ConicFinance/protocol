@@ -7,6 +7,7 @@ import "./tokenomics/IInflationManager.sol";
 import "./tokenomics/ILpTokenStaker.sol";
 import "./tokenomics/IBonding.sol";
 import "./IPoolAdapter.sol";
+import "./IFeeRecipient.sol";
 import "./ICurveRegistryCache.sol";
 
 interface IController {
@@ -19,6 +20,7 @@ interface IController {
     event CurveRegistryCacheSet(address curveRegistryCache);
     event InflationManagerSet(address inflationManager);
     event BondingSet(address bonding);
+    event FeeRecipientSet(address feeRecipient);
     event PriceOracleSet(address priceOracle);
     event WeightUpdateMinDelaySet(uint256 weightUpdateMinDelay);
     event PauseManagerSet(address indexed manager, bool isManager);
@@ -61,6 +63,11 @@ interface IController {
     function bonding() external view returns (IBonding);
 
     function setBonding(address _bonding) external;
+
+    // fees
+    function feeRecipient() external view returns (IFeeRecipient);
+
+    function setFeeRecipient(address _feeRecipient) external;
 
     // oracle
     function priceOracle() external view returns (IGenericOracle);
