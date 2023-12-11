@@ -41,6 +41,6 @@ contract ConicPoolBaseTest is ConicTest {
         for (uint256 i = 0; i < weights.length; i++) {
             totalWeight += weights[i].weight;
         }
-        assertEq(totalWeight, 1e18);
+        assertEq(totalWeight, 1e18, "weights do not sum to 1");
     }
 }

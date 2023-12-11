@@ -636,15 +636,27 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         uint256 scaleUp_ = ScaledMath.ONE.divDown(ScaledMath.ONE - weights.get(zeroedPool));
         uint256 curvePoolLength_ = _pools.length();
 
-        uint256 totalWeight;
+        weights.set(zeroedPool, 0);
+        emit NewWeight(zeroedPool, 0);
+
+        address[] memory nonZeroPools = new address[](curvePoolLength_ - 1);
+        uint256[] memory nonZeroWeights = new uint256[](curvePoolLength_ - 1);
+        uint256 nonZeroPoolsCount;
         for (uint256 i; i < curvePoolLength_; i++) {
-            address pool_ = _pools.at(i);
-            uint256 newWeight_ = pool_ == zeroedPool ? 0 : weights.get(pool_).mulDown(scaleUp_);
+            address pool = _pools.at(i);
+            uint256 currentWeight = weights.get(pool);
+            if (currentWeight == 0) continue;
+            nonZeroPools[nonZeroPoolsCount] = pool;
+            nonZeroWeights[nonZeroPoolsCount] = currentWeight;
+            nonZeroPoolsCount++;
+        }
+
+        uint256 totalWeight;
+        for (uint256 i; i < nonZeroPoolsCount; i++) {
+            address pool_ = nonZeroPools[i];
+            uint256 newWeight_ = nonZeroWeights[i].mulDown(scaleUp_);
             // ensure that the sum of the weights is 1 despite potential rounding errors
-            if (
-                ((pool_ != zeroedPool) && i == curvePoolLength_ - 1) ||
-                (i == curvePoolLength_ - 2 && _pools.at(i + 1) == zeroedPool)
-            ) {
+            if (i == nonZeroPoolsCount - 1) {
                 newWeight_ = ScaledMath.ONE - totalWeight;
             }
             totalWeight += newWeight_;
