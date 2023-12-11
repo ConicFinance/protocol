@@ -4,6 +4,9 @@ pragma solidity 0.8.17;
 import "./IOracle.sol";
 
 interface IGenericOracle is IOracle {
+    /// @notice returns the oracle to be used to price `token`
+    function getOracle(address token) external view returns (IOracle);
+
     /// @notice converts the price of an LP token to the given underlying
     function curveLpToUnderlying(
         address curveLpToken,
