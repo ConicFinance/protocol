@@ -35,37 +35,44 @@ library CurvePoolUtils {
     }
 
     function ensurePoolBalanced(PoolMeta memory poolMeta) internal view {
-        uint256 fromDecimals = poolMeta.decimals[0];
-        uint256 fromBalance = 10 ** fromDecimals;
-        uint256 fromPrice = poolMeta.prices[0];
-
         uint256 poolFee = ICurvePoolV1(poolMeta.pool).fee().convertScale(
             _CURVE_POOL_FEE_DECIMALS,
             18
         );
-        for (uint256 i = 1; i < poolMeta.numberOfCoins; i++) {
-            uint256 toDecimals = poolMeta.decimals[i];
-            uint256 toPrice = poolMeta.prices[i];
-            uint256 toExpectedUnscaled = (fromBalance * fromPrice) / toPrice;
-            uint256 toExpected = toExpectedUnscaled.convertScale(
-                uint8(fromDecimals),
-                uint8(toDecimals)
-            );
 
-            uint256 toActual;
+        for (uint256 i = 0; i < poolMeta.numberOfCoins - 1; i++) {
+            uint256 fromDecimals = poolMeta.decimals[i];
+            uint256 fromBalance = 10 ** fromDecimals;
+            uint256 fromPrice = poolMeta.prices[i];
 
-            if (poolMeta.assetType == AssetType.CRYPTO) {
-                // Handling crypto pools
-                toActual = ICurvePoolV2(poolMeta.pool).get_dy(0, i, fromBalance);
-            } else {
-                // Handling other pools
-                toActual = ICurvePoolV1(poolMeta.pool).get_dy(0, int128(uint128(i)), fromBalance);
+            for (uint256 j = i + 1; j < poolMeta.numberOfCoins; j++) {
+                uint256 toDecimals = poolMeta.decimals[j];
+                uint256 toPrice = poolMeta.prices[j];
+                uint256 toExpectedUnscaled = (fromBalance * fromPrice) / toPrice;
+                uint256 toExpected = toExpectedUnscaled.convertScale(
+                    uint8(fromDecimals),
+                    uint8(toDecimals)
+                );
+
+                uint256 toActual;
+
+                if (poolMeta.assetType == AssetType.CRYPTO) {
+                    // Handling crypto pools
+                    toActual = ICurvePoolV2(poolMeta.pool).get_dy(i, j, fromBalance);
+                } else {
+                    // Handling other pools
+                    toActual = ICurvePoolV1(poolMeta.pool).get_dy(
+                        int128(uint128(i)),
+                        int128(uint128(j)),
+                        fromBalance
+                    );
+                }
+
+                require(
+                    _isWithinThreshold(toExpected, toActual, poolFee, poolMeta.imbalanceBuffers[i]),
+                    "pool is not balanced"
+                );
             }
-
-            require(
-                _isWithinThreshold(toExpected, toActual, poolFee, poolMeta.imbalanceBuffers[i]),
-                "pool is not balanced"
-            );
         }
     }
 
