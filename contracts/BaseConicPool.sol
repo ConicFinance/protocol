@@ -616,12 +616,14 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         // Scale up other weights to compensate
         _setWeightToZero(curvePool_);
 
-        rebalancingRewardsFactor = emergencyRebalancingRewardsFactor;
-        rebalancingRewardsActivatedAt = uint64(block.timestamp);
         if (rebalancingRewardsEnabled) {
             IPoolAdapter poolAdapter = controller.poolAdapterFor(curvePool_);
             uint256 usdValue = poolAdapter.computePoolValueInUSD(address(this), curvePool_);
             if (usdValue > _MAX_USD_VALUE_FOR_REMOVING_POOL) {
+                // if the rebalancing rewards were already active
+                // we reset the activated at because the rewards factor is now increased
+                rebalancingRewardsActivatedAt = uint64(block.timestamp);
+                rebalancingRewardsFactor = emergencyRebalancingRewardsFactor;
                 rebalancingRewardActive = true;
             }
         }
