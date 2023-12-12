@@ -163,12 +163,17 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         // Preparing deposit
         require(!isShutdown, "pool is shut down");
         require(underlyingAmount > 0, "deposit amount cannot be zero");
+
+        _updateAdapterCachedPrices();
+
         uint256 underlyingPrice_ = controller.priceOracle().getUSDPrice(address(underlying));
+        // We use the cached price of LP tokens, which is effectively the latest price
+        // because we just updated the cache
         (
             vars.underlyingBalanceBefore,
             vars.allocatedBalanceBefore,
             vars.allocatedPerPoolBefore
-        ) = _getTotalAndPerPoolUnderlying(underlyingPrice_);
+        ) = _getTotalAndPerPoolUnderlying(underlyingPrice_, IPoolAdapter.PriceMode.Cached);
         vars.exchangeRate = _exchangeRate(vars.underlyingBalanceBefore);
 
         // Executing deposit
@@ -180,11 +185,12 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         );
 
         // Minting LP Tokens
+        // We use the minimum between the price of the LP tokens before and after deposit
         (
             vars.underlyingBalanceAfter,
             vars.allocatedBalanceAfter,
             vars.allocatedPerPoolAfter
-        ) = _getTotalAndPerPoolUnderlying(underlyingPrice_);
+        ) = _getTotalAndPerPoolUnderlying(underlyingPrice_, IPoolAdapter.PriceMode.Minimum);
         vars.underlyingBalanceIncrease = vars.underlyingBalanceAfter - vars.underlyingBalanceBefore;
         vars.mintableUnderlyingAmount = _min(underlyingAmount, vars.underlyingBalanceIncrease);
         vars.lpReceived = vars.mintableUnderlyingAmount.divDown(vars.exchangeRate);
@@ -743,7 +749,7 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         )
     {
         uint256 underlyingPrice_ = controller.priceOracle().getUSDPrice(address(underlying));
-        return _getTotalAndPerPoolUnderlying(underlyingPrice_);
+        return _getTotalAndPerPoolUnderlying(underlyingPrice_, IPoolAdapter.PriceMode.Latest);
     }
 
     function isBalanced() external view override returns (bool) {
@@ -768,6 +774,15 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         emit EmergencyRebalancingRewardFactorUpdated(factor_);
     }
 
+    function _updateAdapterCachedPrices() internal {
+        uint256 poolsLength_ = _pools.length();
+        for (uint256 i; i < poolsLength_; i++) {
+            address pool_ = _pools.at(i);
+            IPoolAdapter poolAdapter = controller.poolAdapterFor(pool_);
+            poolAdapter.updatePriceCache(pool_);
+        }
+    }
+
     /**
      * @notice Returns several values related to the Omnipools's underlying assets.
      * @param underlyingPrice_ Price of the underlying asset in USD
@@ -776,7 +791,8 @@ abstract contract BaseConicPool is IConicPool, Pausable {
      * @return perPoolUnderlying_ Array of underlying values of the Omnipool that is allocated to each Curve pool
      */
     function _getTotalAndPerPoolUnderlying(
-        uint256 underlyingPrice_
+        uint256 underlyingPrice_,
+        IPoolAdapter.PriceMode priceMode
     )
         internal
         view
@@ -795,7 +811,8 @@ abstract contract BaseConicPool is IConicPool, Pausable {
                 address(this),
                 pool_,
                 address(underlying),
-                underlyingPrice_
+                underlyingPrice_,
+                priceMode
             );
             perPoolUnderlying_[i] = poolUnderlying_;
             totalAllocated_ += poolUnderlying_;
