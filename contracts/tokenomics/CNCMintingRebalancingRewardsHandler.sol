@@ -196,14 +196,14 @@ contract CNCMintingRebalancingRewardsHandler is
         address[] memory pools = controller.listPools();
         for (uint256 i; i < pools.length; i++) {
             require(
-                !controller.inflationManager().hasPoolRebalancingRewardHandlers(
+                !controller.inflationManager().hasPoolRebalancingRewardHandler(
                     pools[i],
                     address(this)
                 ),
                 "handler is still registered for a pool"
             );
             require(
-                controller.inflationManager().hasPoolRebalancingRewardHandlers(
+                controller.inflationManager().hasPoolRebalancingRewardHandler(
                     pools[i],
                     newRebalancingRewardsHandler
                 ),

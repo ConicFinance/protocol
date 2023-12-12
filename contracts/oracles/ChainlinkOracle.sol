@@ -71,13 +71,13 @@ contract ChainlinkOracle is IOracle, Ownable {
 
     // Prices are always provided with 18 decimals pecision
     function getUSDPrice(address token) external view returns (uint256) {
-        return _getPrice(token, Denominations.USD, false);
+        return _getPrice(token, Denominations.USD, true);
     }
 
     function _getPrice(
         address token,
         address denomination,
-        bool shouldRevert
+        bool tryOtherDenomination
     ) internal view returns (uint256) {
         if (_isEth(token)) token = Denominations.ETH;
         try _feedRegistry.latestRoundData(token, denomination) returns (
@@ -92,16 +92,16 @@ contract ChainlinkOracle is IOracle, Ownable {
             require(updatedAt_ >= block.timestamp - heartbeat, "price too old");
             return _scaleFrom(uint256(price_), _feedRegistry.decimals(token, denomination));
         } catch Error(string memory reason) {
-            if (shouldRevert) revert(reason);
+            if (!tryOtherDenomination) revert(reason);
 
             if (denomination == Denominations.USD) {
                 return
-                    (_getPrice(token, Denominations.ETH, true) *
-                        _getPrice(Denominations.ETH, Denominations.USD, true)) / 1e18;
+                    (_getPrice(token, Denominations.ETH, false) *
+                        _getPrice(Denominations.ETH, Denominations.USD, false)) / 1e18;
             }
             return
-                (_getPrice(token, Denominations.USD, true) * 1e18) /
-                _getPrice(Denominations.ETH, Denominations.USD, true);
+                (_getPrice(token, Denominations.USD, false) * 1e18) /
+                _getPrice(Denominations.ETH, Denominations.USD, false);
         }
     }
 

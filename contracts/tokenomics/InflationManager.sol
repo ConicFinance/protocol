@@ -157,7 +157,7 @@ contract InflationManager is IInflationManager, Ownable {
         emit RebalancingRewardHandlerRemoved(poolAddress, rebalancingRewardHandler);
     }
 
-    function hasPoolRebalancingRewardHandlers(
+    function hasPoolRebalancingRewardHandler(
         address poolAddress,
         address handler
     ) external view returns (bool) {
