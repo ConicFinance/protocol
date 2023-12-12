@@ -123,6 +123,7 @@ contract Controller is IController, Ownable, Initializable {
 
     function setConvexBooster(address _convexBooster) external override onlyOwner {
         require(IBooster(convexBooster).isShutdown(), "current booster is not shutdown");
+        require(_convexBooster != convexBooster, "same convex booster");
         convexBooster = _convexBooster;
         emit ConvexBoosterSet(_convexBooster);
     }
@@ -134,21 +135,28 @@ contract Controller is IController, Ownable, Initializable {
     }
 
     function setConvexHandler(address _convexHandler) external override onlyOwner {
+        require(_convexHandler != convexHandler, "same convex handler");
         convexHandler = _convexHandler;
         emit ConvexHandlerSet(_convexHandler);
     }
 
     function setInflationManager(address manager) external onlyOwner {
+        require(manager != address(0), "cannot set to zero address");
+        require(manager != address(inflationManager), "same inflation manager");
         inflationManager = IInflationManager(manager);
         emit InflationManagerSet(manager);
     }
 
     function setPriceOracle(address oracle) external override onlyOwner {
+        require(oracle != address(0), "cannot set to zero address");
+        require(oracle != address(priceOracle), "same price oracle");
         priceOracle = IGenericOracle(oracle);
         emit PriceOracleSet(oracle);
     }
 
     function setCurveRegistryCache(address curveRegistryCache_) external override onlyOwner {
+        require(curveRegistryCache_ != address(0), "cannot set to zero address");
+        require(curveRegistryCache_ != address(curveRegistryCache), "same curve registry cache");
         curveRegistryCache = ICurveRegistryCache(curveRegistryCache_);
         emit CurveRegistryCacheSet(curveRegistryCache_);
     }
@@ -159,22 +167,28 @@ contract Controller is IController, Ownable, Initializable {
     }
 
     function setDefaultPoolAdapter(address poolAdapter) external override onlyOwner {
+        require(poolAdapter != address(0), "cannot set to zero address");
+        require(poolAdapter != address(defaultPoolAdapter), "same default pool adapter");
         defaultPoolAdapter = IPoolAdapter(poolAdapter);
         emit DefaultPoolAdapterSet(poolAdapter);
     }
 
     function setCustomPoolAdapter(address pool, address poolAdapter) external override onlyOwner {
+        require(poolAdapter != address(_customPoolAdapters[pool]), "same custom pool adapter");
         _customPoolAdapters[pool] = IPoolAdapter(poolAdapter);
         emit CustomPoolAdapterSet(pool, poolAdapter);
     }
 
     function setBonding(address _bonding) external override onlyOwner {
+        require(address(_bonding) != address(0), "cannot set to zero address");
+        require(address(_bonding) != address(bonding), "same bonding");
         bonding = IBonding(_bonding);
         emit BondingSet(_bonding);
     }
 
     function setFeeRecipient(address _feeRecipient) external override onlyOwner {
         require(address(_feeRecipient) != address(0), "cannot set to zero address");
+        require(address(_feeRecipient) != address(feeRecipient), "same fee recipient");
         feeRecipient = IFeeRecipient(_feeRecipient);
         emit FeeRecipientSet(_feeRecipient);
     }
@@ -182,6 +196,7 @@ contract Controller is IController, Ownable, Initializable {
     function setWeightUpdateMinDelay(uint256 delay) external override onlyOwner {
         require(delay < MAX_WEIGHT_UPDATE_MIN_DELAY, "delay too long");
         require(delay > MIN_WEIGHT_UPDATE_MIN_DELAY, "delay too short");
+        require(delay != weightUpdateMinDelay, "same delay");
         weightUpdateMinDelay = delay;
         emit WeightUpdateMinDelaySet(delay);
     }
@@ -219,6 +234,8 @@ contract Controller is IController, Ownable, Initializable {
         address token,
         uint256 amount
     ) external override onlyOwner {
+        require(amount != _minimumTaintedTransferAmount[token], "same amount");
+
         address conicPool = ILpToken(token).minter();
         IERC20Metadata underlying = IConicPool(conicPool).underlying();
         uint256 underlyingPrice = priceOracle.getUSDPrice(address(underlying));
