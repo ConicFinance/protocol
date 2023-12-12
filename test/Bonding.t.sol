@@ -148,7 +148,7 @@ contract BondingTest is ConicPoolBaseTest {
 
         skip(10.5 days);
 
-        bonding.checkpointAccount(address(bb8));
+        bonding.accountCheckpoint(address(bb8));
 
         assertApproxEqRel(
             500 * 10 ** decimals,
@@ -157,7 +157,7 @@ contract BondingTest is ConicPoolBaseTest {
         );
         skip(3.5 days);
 
-        bonding.checkpointAccount(address(bb8));
+        bonding.accountCheckpoint(address(bb8));
         assertApproxEqRel(
             1_000 * 10 ** decimals,
             bonding.perAccountStreamAccrued(address(bb8)),
@@ -311,7 +311,7 @@ contract BondingTest is ConicPoolBaseTest {
         // skip 2 epochs
         skip(15 days);
 
-        bonding.checkpointAccount(address(bb8));
+        bonding.accountCheckpoint(address(bb8));
 
         assertApproxEqRel(
             1_000 * 10 ** decimals,
@@ -319,7 +319,7 @@ contract BondingTest is ConicPoolBaseTest {
             0.01e18
         );
 
-        bonding.checkpointAccount(address(c3po));
+        bonding.accountCheckpoint(address(c3po));
         assertApproxEqRel(
             1_000 * 10 ** decimals,
             bonding.perAccountStreamAccrued(address(c3po)),

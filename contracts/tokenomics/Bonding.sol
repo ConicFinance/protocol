@@ -144,7 +144,7 @@ contract Bonding is IBonding, Ownable {
         require(cncToReceive >= minCncReceived, "Insufficient CNC received");
 
         // Checkpoint to set user integrals etc.
-        _checkpointAccount(msg.sender);
+        _accountCheckpoint(msg.sender);
 
         IERC20 lpToken = IERC20(crvUsdPool.lpToken());
         lpToken.safeTransferFrom(msg.sender, address(this), lpTokenAmount);
@@ -168,7 +168,7 @@ contract Bonding is IBonding, Ownable {
 
     function claimStream() external override {
         if (!bondingStarted) return;
-        _checkpointAccount(msg.sender);
+        _accountCheckpoint(msg.sender);
         IERC20 lpToken = IERC20(crvUsdPool.lpToken());
         uint256 amount = perAccountStreamAccrued[msg.sender];
         require(amount > 0, "no balance");
@@ -204,9 +204,9 @@ contract Bonding is IBonding, Ownable {
         _streamCheckpoint();
     }
 
-    function checkpointAccount(address account) public override {
+    function accountCheckpoint(address account) public override {
         if (!bondingStarted) return;
-        _checkpointAccount(account);
+        _accountCheckpoint(account);
     }
 
     function computeCurrentCncBondPrice() public view override returns (uint256) {
@@ -215,7 +215,7 @@ contract Bonding is IBonding, Ownable {
         return cncStartPrice.mulDown(discountFactor);
     }
 
-    function _checkpointAccount(address account) internal {
+    function _accountCheckpoint(address account) internal {
         _streamCheckpoint();
         uint256 accountBoostedBalance = cncLocker.totalStreamBoost(account);
         perAccountStreamAccrued[account] += accountBoostedBalance.mulDown(
