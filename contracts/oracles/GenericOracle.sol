@@ -30,14 +30,18 @@ contract GenericOracle is IGenericOracle, Ownable {
             _curveLpOracle.isTokenSupported(token);
     }
 
-    function getUSDPrice(address token) public view virtual returns (uint256) {
+    function getOracle(address token) public view virtual returns (IOracle) {
         if (address(customOracles[token]) != address(0)) {
-            return customOracles[token].getUSDPrice(token);
+            return customOracles[token];
         }
         if (_chainlinkOracle.isTokenSupported(token)) {
-            return _chainlinkOracle.getUSDPrice(token);
+            return _chainlinkOracle;
         }
-        return _curveLpOracle.getUSDPrice(token);
+        return _curveLpOracle;
+    }
+
+    function getUSDPrice(address token) public view virtual returns (uint256) {
+        return getOracle(token).getUSDPrice(token);
     }
 
     function setCustomOracle(address token, address oracle) external onlyOwner {

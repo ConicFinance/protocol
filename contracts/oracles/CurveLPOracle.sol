@@ -19,9 +19,13 @@ contract CurveLPOracle is IOracle, Ownable {
     using ScaledMath for uint256;
 
     event ImbalanceThresholdUpdated(address indexed token, uint256 threshold);
+    event InternalImbalanceThresholdUpdated(address indexed token, uint256 threshold);
 
     uint256 internal constant _MAX_IMBALANCE_BUFFER = 0.1e18;
     mapping(address => uint256) public customImbalanceBuffers;
+
+    /// @notice these are used when the oracle is called internally for pricing metapool base pools
+    mapping(address => uint256) public customInternalImbalanceBuffers;
 
     IController private immutable controller;
 
@@ -42,7 +46,11 @@ contract CurveLPOracle is IOracle, Ownable {
     }
 
     function getUSDPrice(address token) external view returns (uint256) {
-        IOracle genericOracle = controller.priceOracle();
+        return _getUSDPrice(token, false);
+    }
+
+    function _getUSDPrice(address token, bool isInternal) internal view returns (uint256) {
+        IGenericOracle genericOracle = controller.priceOracle();
 
         // Getting the pool data
         address pool = _getCurvePool(token);
@@ -58,9 +66,18 @@ contract CurveLPOracle is IOracle, Ownable {
         uint256[] memory imbalanceBuffers = new uint256[](numberOfCoins);
         for (uint256 i; i < numberOfCoins; i++) {
             address coin = coins[i];
-            uint256 price = genericOracle.getUSDPrice(coin);
+            IOracle oracle = genericOracle.getOracle(coin);
+
+            uint256 imbalanceBuffer = isInternal
+                ? customInternalImbalanceBuffers[coin]
+                : customImbalanceBuffers[coin];
+
+            uint256 price = address(oracle) == address(this)
+                ? _getUSDPrice(coin, true)
+                : oracle.getUSDPrice(coin);
+
             prices[i] = price;
-            imbalanceBuffers[i] = customImbalanceBuffers[coin];
+            imbalanceBuffers[i] = imbalanceBuffer;
             require(price > 0, "price is 0");
             uint256 balance = _getBalance(pool, i);
             require(balance > 0, "balance is 0");
@@ -87,6 +104,12 @@ contract CurveLPOracle is IOracle, Ownable {
         require(buffer <= _MAX_IMBALANCE_BUFFER, "buffer too high");
         customImbalanceBuffers[token] = buffer;
         emit ImbalanceThresholdUpdated(token, buffer);
+    }
+
+    function setInternalImbalanceThreshold(address token, uint256 buffer) external onlyOwner {
+        require(buffer <= _MAX_IMBALANCE_BUFFER, "buffer too high");
+        customInternalImbalanceBuffers[token] = buffer;
+        emit InternalImbalanceThresholdUpdated(token, buffer);
     }
 
     function _getCurvePool(address lpToken_) internal view returns (address) {
