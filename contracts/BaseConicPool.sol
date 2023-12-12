@@ -678,7 +678,7 @@ abstract contract BaseConicPool is IConicPool, Pausable {
 
     /**
      * @notice Allows anyone to set the weight of a Curve pool to 0 if the Convex pool for the
-     * associated PID has been shutdown. This is a very unilkely outcome and the method does
+     * associated PID has been shut down. This is a very unlikely outcome and the method does
      * not reenable rebalancing rewards.
      * @param curvePool_ Curve pool for which the Convex PID is invalid (has been shut down)
      */
@@ -688,7 +688,7 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         require(isRegisteredPool(curvePool_), "curve pool not registered");
         ICurveRegistryCache registryCache_ = controller.curveRegistryCache();
         uint256 pid = registryCache_.getPid(curvePool_);
-        require(registryCache_.isShutdownPid(pid), "convex pool pid is shut down");
+        require(registryCache_.isShutdownPid(pid), "convex pool pid is not shut down");
         _setWeightToZero(curvePool_);
         emit HandledInvalidConvexPid(curvePool_, pid);
     }
