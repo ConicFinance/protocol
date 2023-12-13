@@ -20,7 +20,15 @@ library ArrayExtensions {
     }
 
     function includes(address[] memory array, address element) internal pure returns (bool) {
-        for (uint256 i; i < array.length; i++) {
+        return _includes(array, element, array.length);
+    }
+
+    function _includes(
+        address[] memory array,
+        address element,
+        uint256 until
+    ) internal pure returns (bool) {
+        for (uint256 i; i < until; i++) {
             if (array[i] == element) return true;
         }
         return false;
@@ -30,7 +38,7 @@ library ArrayExtensions {
         address[] memory unique = new address[](array.length);
         uint256 j;
         for (uint256 i; i < array.length; i++) {
-            if (!includes(unique, array[i])) {
+            if (!_includes(unique, array[i], j)) {
                 unique[j++] = array[i];
             }
         }
