@@ -41,7 +41,7 @@ interface IBonding {
 
     function streamCheckpoint() external;
 
-    function checkpointAccount(address account) external;
+    function accountCheckpoint(address account) external;
 
     function computeCurrentCncBondPrice() external view returns (uint256);
 }

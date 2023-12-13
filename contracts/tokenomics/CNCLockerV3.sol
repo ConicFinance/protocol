@@ -421,7 +421,7 @@ contract CNCLockerV3 is ICNCLockerV3, Ownable {
 
         // bonding stream
         IBonding bonding = controller.bonding();
-        bonding.checkpointAccount(account);
+        bonding.accountCheckpoint(account);
     }
 
     function computeBoost(uint128 lockTime) public pure override returns (uint128) {
