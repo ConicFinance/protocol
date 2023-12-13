@@ -16,6 +16,9 @@ contract CurveAdapter is IPoolAdapter {
     using Address for address;
     using ScaledMath for uint256;
 
+    /// @dev used to store the prices of the LP tokens
+    mapping(address => uint256) internal _cachedPrices;
+
     IController public immutable controller;
 
     constructor(IController _controller) {
@@ -92,26 +95,67 @@ contract CurveAdapter is IPoolAdapter {
         );
     }
 
+    function updatePriceCache(address pool) external override {
+        ICurveRegistryCache registryCache = controller.curveRegistryCache();
+        IGenericOracle priceOracle = controller.priceOracle();
+        address curveLpToken = registryCache.lpToken(pool);
+        _cachedPrices[curveLpToken] = priceOracle.getUSDPrice(curveLpToken);
+    }
+
     function computePoolValueInUnderlying(
         address conicPool,
         address pool,
         address underlying,
         uint256 underlyingPrice
     ) external view override returns (uint256 underlyingAmount) {
+        return
+            computePoolValueInUnderlying(
+                conicPool,
+                pool,
+                underlying,
+                underlyingPrice,
+                PriceMode.Latest
+            );
+    }
+
+    function computePoolValueInUnderlying(
+        address conicPool,
+        address pool,
+        address underlying,
+        uint256 underlyingPrice,
+        PriceMode priceMode
+    ) public view override returns (uint256 underlyingAmount) {
         uint8 decimals = IERC20Metadata(underlying).decimals();
-        uint256 usdAmount = computePoolValueInUSD(conicPool, pool);
+        uint256 usdAmount = computePoolValueInUSD(conicPool, pool, priceMode);
         underlyingAmount = usdAmount.divDown(underlyingPrice).convertScale(18, decimals);
     }
 
     function computePoolValueInUSD(
         address conicPool,
         address pool
+    ) external view override returns (uint256 usdAmount) {
+        return computePoolValueInUSD(conicPool, pool, PriceMode.Latest);
+    }
+
+    function computePoolValueInUSD(
+        address conicPool,
+        address pool,
+        PriceMode priceMode
     ) public view override returns (uint256 usdAmount) {
         IGenericOracle priceOracle = controller.priceOracle();
         address curveLpToken = controller.curveRegistryCache().lpToken(pool);
         uint8 lpDecimals = IERC20Metadata(curveLpToken).decimals();
         uint256 lpBalance = _totalCurveLpBalance(conicPool, pool);
-        uint256 lpPrice = priceOracle.getUSDPrice(curveLpToken);
+        uint256 lpPrice;
+        if (priceMode == PriceMode.Latest) {
+            lpPrice = priceOracle.getUSDPrice(curveLpToken);
+        } else if (priceMode == PriceMode.Cached) {
+            lpPrice = _cachedPrices[curveLpToken];
+        } else {
+            // priceMode == PriceMode.Minimum
+            lpPrice = priceOracle.getUSDPrice(curveLpToken).min(_cachedPrices[curveLpToken]);
+        }
+
         usdAmount = lpBalance.convertScale(lpDecimals, 18).mulDown(lpPrice);
     }
 
