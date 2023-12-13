@@ -46,7 +46,7 @@ interface IInflationManager {
         address poolAddress
     ) external view returns (address[] memory);
 
-    function hasPoolRebalancingRewardHandlers(
+    function hasPoolRebalancingRewardHandler(
         address poolAddress,
         address handler
     ) external view returns (bool);
