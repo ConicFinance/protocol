@@ -24,9 +24,9 @@ contract LpToken is ILpToken, ERC20 {
         address _controller,
         address _minter,
         uint8 _decimals,
-        string memory name,
-        string memory symbol
-    ) ERC20(name, symbol) {
+        string memory name_,
+        string memory symbol_
+    ) ERC20(name_, symbol_) {
         controller = IController(_controller);
         minter = _minter;
         __decimals = _decimals;
