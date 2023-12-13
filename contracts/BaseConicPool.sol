@@ -784,6 +784,7 @@ abstract contract BaseConicPool is IConicPool, Pausable {
     function setEmergencyRebalancingRewardFactor(uint256 factor_) external onlyOwner {
         require(factor_ >= _MIN_EMERGENCY_REBALANCING_REWARD_FACTOR, "factor below minimum");
         require(factor_ <= _MAX_EMERGENCY_REBALANCING_REWARD_FACTOR, "factor above maximum");
+        require(factor_ != emergencyRebalancingRewardsFactor, "same as current");
         emergencyRebalancingRewardsFactor = factor_;
         emit EmergencyRebalancingRewardFactorUpdated(factor_);
     }
