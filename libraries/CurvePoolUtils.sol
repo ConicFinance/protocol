@@ -67,9 +67,12 @@ library CurvePoolUtils {
                         fromBalance
                     );
                 }
+                uint256 _minImbalanceBuffer = poolMeta.imbalanceBuffers[i].min(
+                    poolMeta.imbalanceBuffers[j]
+                );
 
                 require(
-                    _isWithinThreshold(toExpected, toActual, poolFee, poolMeta.imbalanceBuffers[i]),
+                    _isWithinThreshold(toExpected, toActual, poolFee, _minImbalanceBuffer),
                     "pool is not balanced"
                 );
             }
