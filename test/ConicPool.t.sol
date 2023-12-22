@@ -276,7 +276,7 @@ contract ConicPoolTest is ConicPoolBaseTest {
     function testHandleInvalidConvexPid() public {
         address[] memory pools = conicPool.allPools();
         address curvePool = pools[0];
-        vm.expectRevert("convex pool pid is shut down");
+        vm.expectRevert("convex pool pid is not shut down");
         conicPool.handleInvalidConvexPid(curvePool);
         uint256 pid = controller.curveRegistryCache().getPid(curvePool);
         vm.mockCall(
