@@ -9,7 +9,7 @@ import "../interfaces/IPausable.sol";
 abstract contract Pausable is Ownable, IPausable {
     uint256 internal constant _MIN_PAUSE_DURATION = 1 hours;
     uint256 internal constant _MAX_PAUSE_DURATION = 3 days;
-    uint256 internal constant _INITIAL_PAUSE_DURATION = 3 hours;
+    uint256 internal constant _INITIAL_PAUSE_DURATION = 8 hours;
 
     uint256 public pausedUntil;
     uint256 public pauseDuration;
