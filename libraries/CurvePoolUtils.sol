@@ -8,7 +8,9 @@ import "./ScaledMath.sol";
 library CurvePoolUtils {
     using ScaledMath for uint256;
 
-    /// @dev by default, allow for 10 bps deviation regardless of pool fees
+    error NotWithinThreshold(address pool, uint256 assetA, uint256 assetB);
+
+    /// @dev by default, allow for 30 bps deviation regardless of pool fees
     uint256 internal constant _DEFAULT_IMBALANCE_BUFFER = 30e14;
 
     /// @dev Curve scales the `fee` by 1e10
@@ -67,14 +69,12 @@ library CurvePoolUtils {
                         fromBalance
                     );
                 }
-                uint256 _minImbalanceBuffer = poolMeta.imbalanceBuffers[i].min(
+                uint256 _minImbalanceBuffer = poolMeta.imbalanceBuffers[i].max(
                     poolMeta.imbalanceBuffers[j]
                 );
 
-                require(
-                    _isWithinThreshold(toExpected, toActual, poolFee, _minImbalanceBuffer),
-                    "pool is not balanced"
-                );
+                if (!_isWithinThreshold(toExpected, toActual, poolFee, _minImbalanceBuffer))
+                    revert NotWithinThreshold(poolMeta.pool, i, j);
             }
         }
     }
