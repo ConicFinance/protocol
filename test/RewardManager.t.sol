@@ -82,9 +82,6 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
     function testClaimRewards() external {
         _deposit();
 
-        inflationManager.updatePoolWeights();
-        IBooster(controller.convexBooster()).earmarkRewards(ConvexPid.TRI_POOL);
-
         vm.warp(block.timestamp + 86400);
         assertTrue(lpTokenStaker.getBalanceForPool(address(conicPool)) > 0);
 
@@ -112,9 +109,6 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
         rewardManager.addExtraReward(Tokens.SUSHI);
 
         _deposit();
-
-        inflationManager.updatePoolWeights();
-        IBooster(controller.convexBooster()).earmarkRewards(ConvexPid.TRI_POOL);
 
         vm.warp(block.timestamp + 86400);
 
@@ -161,9 +155,6 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
     function testClaimRewardsAfterUnstake() external {
         _deposit();
 
-        inflationManager.updatePoolWeights();
-        IBooster(controller.convexBooster()).earmarkRewards(ConvexPid.TRI_POOL);
-
         vm.warp(block.timestamp + 86400);
         assertTrue(lpTokenStaker.getBalanceForPool(address(conicPool)) > 0);
 
@@ -192,9 +183,6 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
 
     function testRewardHandlingIfClaimedOnConvex() external {
         _deposit();
-
-        inflationManager.updatePoolWeights();
-        IBooster(controller.convexBooster()).earmarkRewards(ConvexPid.TRI_POOL);
 
         (uint256 cncEarned, uint256 crvEarned, uint256 cvxEarned) = rewardManager.claimableRewards(
             bb8
@@ -257,9 +245,6 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
 
     function testClaimEarnings() external {
         _deposit(10);
-
-        inflationManager.updatePoolWeights();
-        IBooster(controller.convexBooster()).earmarkRewards(ConvexPid.TRI_POOL);
 
         uint256 ITERATIONS = 365;
         uint256 initialRate = inflationManager.currentInflationRate();
@@ -412,8 +397,6 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
         assertTrue(rewardManager.feesEnabled());
 
         _deposit();
-        inflationManager.updatePoolWeights();
-        IBooster(controller.convexBooster()).earmarkRewards(ConvexPid.TRI_POOL);
 
         vm.warp(block.timestamp + 86400);
         assertGt(lpTokenStaker.getBalanceForPool(address(conicPool)), 0);
@@ -459,5 +442,8 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
         underlying.approve(address(conicPool), amount);
         vm.prank(bb8);
         conicPool.deposit(amount, 0);
+
+        inflationManager.updatePoolWeights();
+        IBooster(controller.convexBooster()).earmarkRewards(ConvexPid.TRI_POOL);
     }
 }
