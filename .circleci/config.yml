@@ -60,7 +60,7 @@ jobs:
       - run:
           name: Run Foundry Unit Tests
           no_output_timeout: 20m
-          command: $HOME/.foundry/bin/forge test --nmc 'ProtocolIntegration|WeightUpdateTest' -vv --compute-units-per-second 250
+          command: $HOME/.foundry/bin/forge test --nmc 'ProtocolIntegration|WeightUpdateTest' -vv --compute-units-per-second 150 --fork-url $MAINNET_RPC_URL --fork-retry-backoff 200
   deploy_mainnet:
     executor: python/default
     resource_class: small
