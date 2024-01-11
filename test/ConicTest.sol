@@ -375,4 +375,12 @@ contract ConicTest is Test {
             }
         }
     }
+
+    function _mintAllCnc(address cncAddress) internal {
+        CNCToken cnc = CNCToken(cncAddress);
+        uint256 toMint = cnc.MAX_TOTAL_SUPPLY() - cnc.totalSupply();
+        address[] memory minters = cnc.listMinters();
+        vm.prank(minters[0]);
+        cnc.mint(makeAddr("zero"), toMint);
+    }
 }

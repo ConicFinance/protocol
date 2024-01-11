@@ -390,6 +390,19 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
         _testZeroClaim();
     }
 
+    function testRunOutOfCnc() external {
+        _deposit();
+
+        vm.warp(block.timestamp + 86400);
+        _testPositiveClaim();
+
+        _mintAllCnc(address(cnc));
+
+        vm.warp(block.timestamp + 86400);
+        vm.prank(bb8);
+        rewardManager.claimEarnings();
+    }
+
     function _deposit() internal {
         _deposit(DEPOSIT_AMOUNT / (10 ** underlying.decimals()));
     }

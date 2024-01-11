@@ -106,6 +106,28 @@ contract RewardsHandlerTest is ConicPoolBaseTest {
         assertApproxEqRel(cncBalanceAfter - cncBalanceBefore, 7.52e18, 0.01e18);
     }
 
+    function testRewardHandlerRebalanceWithNoCnc() public {
+        _mintAllCnc(address(cnc));
+
+        uint256 cncBalanceBefore = IERC20(controller.cncToken()).balanceOf(bb8);
+        uint256 depositAmount = conicPool.computeTotalDeviation() / 2;
+
+        vm.startPrank(bb8);
+        underlying.approve(address(rewardsHandler), depositAmount);
+        (uint256 underlyingReceived, uint256 cncReceived) = rewardsHandler.rebalance(
+            address(conicPool),
+            depositAmount,
+            (depositAmount * 9) / 10,
+            0
+        );
+        vm.stopPrank();
+
+        assertGt(underlyingReceived, 0);
+        uint256 cncBalanceAfter = IERC20(controller.cncToken()).balanceOf(bb8);
+        assertEq(cncBalanceAfter, cncBalanceBefore);
+        assertEq(cncReceived, cncBalanceAfter - cncBalanceBefore);
+    }
+
     function testReceivesNoCncWhenBalanced() public {
         vm.startPrank(bb8);
         uint256 depositAmount = conicPool.computeTotalDeviation() / 2;
