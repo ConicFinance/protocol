@@ -27,6 +27,7 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
         ICurvePoolV2(0x838af967537350D2C44ABB8c010E49E32673ab94);
     address public constant GOVERNANCE_PROXY = address(0xCb7c67bDde9F7aF0667E8d82bb87F1432Bd1d902);
     uint256 public DEPOSIT_AMOUNT;
+    uint256 public CLIFFS_REMAINING = 7;
 
     function setUp() public override {
         super.setUp();
@@ -83,26 +84,8 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
         _deposit();
 
         vm.warp(block.timestamp + 86400);
-        assertTrue(lpTokenStaker.getBalanceForPool(address(conicPool)) > 0);
 
-        IBooster(controller.convexBooster()).earmarkRewards(ConvexPid.TRI_POOL);
-        assertTrue(convexHandler.getCrvEarnedBatch(address(conicPool), conicPool.allPools()) > 0);
-        (uint256 cncBalance, uint256 crvBalance, uint256 cvxBalance) = rewardManager
-            .claimableRewards(bb8);
-        assertTrue(cncBalance > 0);
-        assertTrue(crvBalance > 0);
-        assertTrue(cvxBalance > 0);
-
-        uint256 CRV_BEFORE = IERC20(Tokens.CRV).balanceOf(bb8);
-        uint256 CVX_BEFORE = IERC20(Tokens.CVX).balanceOf(bb8);
-        uint256 CNC_BEFORE = IERC20(Tokens.CNC).balanceOf(bb8);
-
-        vm.prank(bb8);
-        rewardManager.claimEarnings();
-
-        assertTrue(IERC20(Tokens.CRV).balanceOf(bb8) == CRV_BEFORE + crvBalance);
-        assertTrue(IERC20(Tokens.CVX).balanceOf(bb8) == CVX_BEFORE + cvxBalance);
-        assertTrue(IERC20(Tokens.CNC).balanceOf(bb8) == CNC_BEFORE + cncBalance);
+        _testPositiveClaim();
     }
 
     function testExtraRewardTokens() external {
@@ -163,38 +146,19 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
         uint256 lpTokensBalance = lpTokenStaker.getUserBalanceForPool(address(conicPool), bb8);
         vm.prank(bb8);
         conicPool.unstakeAndWithdraw(lpTokensBalance, 0);
-        (uint256 cncBalance, uint256 crvBalance, uint256 cvxBalance) = rewardManager
-            .claimableRewards(bb8);
-        assertGt(cncBalance, 0);
-        assertGt(crvBalance, 0);
-        assertGt(cvxBalance, 0);
 
-        uint256 CRV_BEFORE = IERC20(Tokens.CRV).balanceOf(bb8);
-        uint256 CVX_BEFORE = IERC20(Tokens.CVX).balanceOf(bb8);
-        uint256 CNC_BEFORE = IERC20(Tokens.CNC).balanceOf(bb8);
-
-        vm.prank(bb8);
-        rewardManager.claimEarnings();
-
-        assertEq(IERC20(Tokens.CRV).balanceOf(bb8), CRV_BEFORE + crvBalance);
-        assertEq(IERC20(Tokens.CVX).balanceOf(bb8), CVX_BEFORE + cvxBalance);
-        assertEq(IERC20(Tokens.CNC).balanceOf(bb8), CNC_BEFORE + cncBalance);
+        _testPositiveClaim();
     }
 
     function testRewardHandlingIfClaimedOnConvex() external {
         _deposit();
 
-        (uint256 cncEarned, uint256 crvEarned, uint256 cvxEarned) = rewardManager.claimableRewards(
-            bb8
-        );
-        assertEq(cncEarned, 0);
-        assertEq(crvEarned, 0);
-        assertEq(cvxEarned, 0);
-
         vm.warp(block.timestamp + 86400);
         rewardManager.poolCheckpoint();
 
-        (cncEarned, crvEarned, cvxEarned) = rewardManager.claimableRewards(bb8);
+        (uint256 cncEarned, uint256 crvEarned, uint256 cvxEarned) = rewardManager.claimableRewards(
+            bb8
+        );
         assertTrue(cncEarned > 0);
         assertTrue(crvEarned > 0);
         assertTrue(cvxEarned > 0);
@@ -399,26 +363,8 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
         _deposit();
 
         vm.warp(block.timestamp + 86400);
-        assertGt(lpTokenStaker.getBalanceForPool(address(conicPool)), 0);
 
-        IBooster(controller.convexBooster()).earmarkRewards(ConvexPid.TRI_POOL);
-        assertGt(convexHandler.getCrvEarnedBatch(address(conicPool), conicPool.allPools()), 0);
-        (uint256 cncBalance, uint256 crvBalance, uint256 cvxBalance) = rewardManager
-            .claimableRewards(bb8);
-        assertGt(cncBalance, 0);
-        assertGt(crvBalance, 0);
-        assertGt(cvxBalance, 0);
-
-        uint256 CRV_BEFORE = IERC20(Tokens.CRV).balanceOf(bb8);
-        uint256 CVX_BEFORE = IERC20(Tokens.CVX).balanceOf(bb8);
-        uint256 CNC_BEFORE = IERC20(Tokens.CNC).balanceOf(bb8);
-
-        vm.prank(bb8);
-        rewardManager.claimEarnings();
-
-        assertEq(IERC20(Tokens.CRV).balanceOf(bb8), CRV_BEFORE + crvBalance);
-        assertEq(IERC20(Tokens.CVX).balanceOf(bb8), CVX_BEFORE + cvxBalance);
-        assertEq(IERC20(Tokens.CNC).balanceOf(bb8), CNC_BEFORE + cncBalance);
+        _testPositiveClaim();
     }
 
     function testClaimEarningsWithNewCVXCliff() external {
@@ -430,6 +376,23 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
         controller.setConvexHandler(address(new ConvexHandler(address(controller))));
         vm.expectRevert();
         _testClaimEarningsWithNewCVXCliff();
+    }
+
+    function testNoConvexRewards() external {
+        _deposit();
+
+        vm.warp(block.timestamp + 86400);
+        _testPositiveClaim();
+
+        for (uint256 i; i < CLIFFS_REMAINING - 1; i++) {
+            _advanceCVXCliff();
+            vm.warp(block.timestamp + 86400);
+            _testPositiveClaim();
+        }
+
+        _advanceCVXCliff();
+        vm.warp(block.timestamp + 86400);
+        _testZeroClaim();
     }
 
     function _deposit() internal {
@@ -445,5 +408,43 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
 
         inflationManager.updatePoolWeights();
         IBooster(controller.convexBooster()).earmarkRewards(ConvexPid.TRI_POOL);
+    }
+
+    function _testPositiveClaim() internal {
+        assertGt(convexHandler.getCrvEarnedBatch(address(conicPool), conicPool.allPools()), 0);
+        (uint256 cncBalance, uint256 crvBalance, uint256 cvxBalance) = rewardManager
+            .claimableRewards(bb8);
+        assertGt(cncBalance, 0, "CNC balance should be greater than 0");
+        assertGt(crvBalance, 0, "CRV balance should be greater than 0");
+        assertGt(cvxBalance, 0, "CVX balance should be greater than 0");
+
+        uint256 CRV_BEFORE = IERC20(Tokens.CRV).balanceOf(bb8);
+        uint256 CVX_BEFORE = IERC20(Tokens.CVX).balanceOf(bb8);
+        uint256 CNC_BEFORE = IERC20(Tokens.CNC).balanceOf(bb8);
+
+        vm.prank(bb8);
+        rewardManager.claimEarnings();
+
+        assertEq(IERC20(Tokens.CRV).balanceOf(bb8), CRV_BEFORE + crvBalance);
+        assertEq(IERC20(Tokens.CVX).balanceOf(bb8), CVX_BEFORE + cvxBalance);
+        assertEq(IERC20(Tokens.CNC).balanceOf(bb8), CNC_BEFORE + cncBalance);
+    }
+
+    function _testZeroClaim() internal {
+        (uint256 cncBalance, uint256 crvBalance, uint256 cvxBalance) = rewardManager
+            .claimableRewards(bb8);
+        assertGt(cncBalance, 0, "CNC balance should be greater than 0");
+        assertEq(cvxBalance, 0, "CVX balance should be 0");
+
+        uint256 CRV_BEFORE = IERC20(Tokens.CRV).balanceOf(bb8);
+        uint256 CVX_BEFORE = IERC20(Tokens.CVX).balanceOf(bb8);
+        uint256 CNC_BEFORE = IERC20(Tokens.CNC).balanceOf(bb8);
+
+        vm.prank(bb8);
+        rewardManager.claimEarnings();
+
+        assertEq(IERC20(Tokens.CRV).balanceOf(bb8), CRV_BEFORE + crvBalance);
+        assertEq(IERC20(Tokens.CVX).balanceOf(bb8), CVX_BEFORE + cvxBalance);
+        assertEq(IERC20(Tokens.CNC).balanceOf(bb8), CNC_BEFORE + cncBalance);
     }
 }
