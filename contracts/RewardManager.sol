@@ -260,7 +260,9 @@ contract RewardManager is IRewardManager, Ownable, Initializable {
 
         CRV.safeTransferFrom(conicPool, msg.sender, crvAmount);
         CVX.safeTransferFrom(conicPool, msg.sender, cvxAmount);
-        CNC.safeTransferFrom(conicPool, msg.sender, cncAmount);
+        if (CNC.balanceOf(conicPool) >= cncAmount) {
+            CNC.safeTransferFrom(conicPool, msg.sender, cncAmount);
+        }
 
         (
             uint256 currentHoldingsCRV,
