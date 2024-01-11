@@ -84,6 +84,7 @@ library Tokens {
     address internal constant CRVUSD = address(0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E);
     address internal constant SUSD = address(0x57Ab1ec28D129707052df4dF418D58a2D46d5f51);
     address internal constant SUSHI = address(0x6B3595068778DD592e39A122f4f5a5cF09C90fE2);
+    address internal constant FRXETH = address(0x5E8422345238F34275888049021821E8E08CAa1f);
 }
 
 library ConvexPid {
