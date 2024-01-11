@@ -26,6 +26,7 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
     ICurvePoolV2 public constant CNC_ETH_POOL =
         ICurvePoolV2(0x838af967537350D2C44ABB8c010E49E32673ab94);
     address public constant GOVERNANCE_PROXY = address(0xCb7c67bDde9F7aF0667E8d82bb87F1432Bd1d902);
+    uint256 public DEPOSIT_AMOUNT;
 
     function setUp() public override {
         super.setUp();
@@ -56,6 +57,8 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
 
         IBonding bonding = new MockBonding();
         controller.setBonding(address(bonding));
+
+        DEPOSIT_AMOUNT = 10_000 * 10 ** decimals;
     }
 
     function testInitialState() public {
@@ -77,11 +80,7 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
     }
 
     function testClaimRewards() external {
-        uint256 DEPOSIT_AMOUNT = 10_000 * 10 ** underlying.decimals();
-        vm.prank(bb8);
-        underlying.approve(address(conicPool), DEPOSIT_AMOUNT);
-        vm.prank(bb8);
-        conicPool.deposit(DEPOSIT_AMOUNT, 0);
+        _deposit();
 
         inflationManager.updatePoolWeights();
         IBooster(controller.convexBooster()).earmarkRewards(ConvexPid.TRI_POOL);
@@ -112,11 +111,7 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
     function testExtraRewardTokens() external {
         rewardManager.addExtraReward(Tokens.SUSHI);
 
-        uint256 DEPOSIT_AMOUNT = 10_000 * 10 ** underlying.decimals();
-        vm.prank(bb8);
-        underlying.approve(address(conicPool), DEPOSIT_AMOUNT);
-        vm.prank(bb8);
-        conicPool.deposit(DEPOSIT_AMOUNT, 0);
+        _deposit();
 
         inflationManager.updatePoolWeights();
         IBooster(controller.convexBooster()).earmarkRewards(ConvexPid.TRI_POOL);
@@ -164,11 +159,7 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
     }
 
     function testClaimRewardsAfterUnstake() external {
-        uint256 DEPOSIT_AMOUNT = 10_000 * 10 ** underlying.decimals();
-        vm.prank(bb8);
-        underlying.approve(address(conicPool), DEPOSIT_AMOUNT);
-        vm.prank(bb8);
-        conicPool.deposit(DEPOSIT_AMOUNT, 0);
+        _deposit();
 
         inflationManager.updatePoolWeights();
         IBooster(controller.convexBooster()).earmarkRewards(ConvexPid.TRI_POOL);
@@ -200,23 +191,14 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
     }
 
     function testRewardHandlingIfClaimedOnConvex() external {
-        (uint256 cncEarned, uint256 crvEarned, uint256 cvxEarned) = rewardManager.claimableRewards(
-            bb8
-        );
-        assertEq(cncEarned, 0);
-        assertEq(crvEarned, 0);
-        assertEq(cvxEarned, 0);
-
-        uint256 DEPOSIT_AMOUNT = 10_000 * 10 ** underlying.decimals();
-        vm.prank(bb8);
-        underlying.approve(address(conicPool), DEPOSIT_AMOUNT);
-        vm.prank(bb8);
-        conicPool.deposit(DEPOSIT_AMOUNT, 0);
+        _deposit();
 
         inflationManager.updatePoolWeights();
         IBooster(controller.convexBooster()).earmarkRewards(ConvexPid.TRI_POOL);
 
-        (cncEarned, crvEarned, cvxEarned) = rewardManager.claimableRewards(bb8);
+        (uint256 cncEarned, uint256 crvEarned, uint256 cvxEarned) = rewardManager.claimableRewards(
+            bb8
+        );
         assertEq(cncEarned, 0);
         assertEq(crvEarned, 0);
         assertEq(cvxEarned, 0);
@@ -274,11 +256,7 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
     }
 
     function testClaimEarnings() external {
-        uint256 DEPOSIT_AMOUNT = 10 ** underlying.decimals();
-        vm.prank(bb8);
-        underlying.approve(address(conicPool), DEPOSIT_AMOUNT);
-        vm.prank(bb8);
-        conicPool.deposit(DEPOSIT_AMOUNT, 0);
+        _deposit(10);
 
         inflationManager.updatePoolWeights();
         IBooster(controller.convexBooster()).earmarkRewards(ConvexPid.TRI_POOL);
@@ -288,10 +266,7 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
         for (uint256 i = 0; i < ITERATIONS; i++) {
             vm.prank(bb8);
             rewardManager.claimEarnings();
-            vm.prank(bb8);
-            underlying.approve(address(conicPool), DEPOSIT_AMOUNT);
-            vm.prank(bb8);
-            conicPool.deposit(DEPOSIT_AMOUNT, 0);
+            _deposit(10);
             vm.warp(block.timestamp + 86400);
         }
         uint256 currentRate = inflationManager.currentInflationRate();
@@ -318,42 +293,24 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
         uint256 totalSupply = IERC20(Tokens.CVX).totalSupply();
         uint256 currentCliff = totalSupply / (reductionPerCliff);
 
-        console2.log("Current cliff: %d", currentCliff);
         uint256 cliffsLeft = totalCliffs - currentCliff;
-
-        // CVX minting in CVX ERC20 contract:
-        // ACTUAL_CVX_AMOUNT = DEPOSIT_CRV_AMOUNT.mul(reduction).div(totalCliffs);
-
         uint256 cvxNeededUntilNextCliff = 100_000e18 - (totalSupply % 100_000e18);
         uint256 crvNeededUntilNextCliff = ((cvxNeededUntilNextCliff /
             ((cliffsLeft * 1e18) / totalCliffs)) * 1e18);
 
-        console2.log("Total supply: %d CVX", totalSupply);
-        console2.log("CVX needed for next cliff: %d CVX", cvxNeededUntilNextCliff);
-        console2.log("CRV needed for next cliff: %d CRV", crvNeededUntilNextCliff);
-
         vm.prank(address(0xF403C135812408BFbE8713b5A23a04b3D48AAE31));
-        console2.log("Updating cliff...");
         CVXMinter(Tokens.CVX).mint(Tokens.CVX, crvNeededUntilNextCliff + 1e18); // add 1 extra CVX to avoid imprecisions
         // mint to CVX contract so that no account balances are manipulated
 
         currentCliff = (IERC20(Tokens.CVX).totalSupply()) / (reductionPerCliff);
 
-        console2.log("----------------------------------------------");
-        console2.log("Post update:");
-        console2.log("Current cliff: %d", currentCliff);
-
         cliffsLeft = totalCliffs - currentCliff;
         totalSupply = IERC20(Tokens.CVX).totalSupply();
-        console2.log("Total supply: %d CVX", totalSupply);
 
         cvxNeededUntilNextCliff = 100_000e18 - (totalSupply % 100_000e18);
         currentCliff = totalSupply / (reductionPerCliff);
         crvNeededUntilNextCliff = ((cvxNeededUntilNextCliff / ((cliffsLeft * 1e18) / totalCliffs)) *
             1e18);
-
-        console2.log("CVX needed for next cliff: %d CVX", cvxNeededUntilNextCliff);
-        console2.log("CRV needed for next cliff: %d CRV", crvNeededUntilNextCliff);
     }
 
     function _advanceCVXSupplyToBeWithinThreshold(uint256 cliffThreshold) internal {
@@ -362,7 +319,6 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
         uint256 totalSupply = IERC20(Tokens.CVX).totalSupply();
         uint256 currentCliff = totalSupply / (reductionPerCliff);
         uint256 cliffsLeft = totalCliffs - currentCliff;
-        console2.log("Current cliff: %d", currentCliff);
 
         uint256 requiredThresholdAmount = (reductionPerCliff * cliffThreshold) / 1e18;
         uint256 cvxNeededUntilNextCliff = reductionPerCliff - (totalSupply % reductionPerCliff);
@@ -379,9 +335,6 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
         cvxNeededUntilNextCliff = reductionPerCliff - (totalSupply % reductionPerCliff);
         assertTrue(cvxNeededUntilNextCliff <= requiredThresholdAmount);
         currentCliff = totalSupply / (reductionPerCliff);
-
-        console2.log("Current cliff: %d", currentCliff);
-        console2.log("CVX needed until next cliff: %d CVX", cvxNeededUntilNextCliff);
     }
 
     function testCVXCliffChange() external {
@@ -399,13 +352,8 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
 
     function _testClaimEarningsWithNewCVXCliff() internal {
         _advanceCVXCliff();
-        uint256 DEPOSIT_AMOUNT = 1_000_000 * 10 ** underlying.decimals();
         setTokenBalance(bb8, Tokens.DAI, DEPOSIT_AMOUNT);
-        vm.prank(bb8);
-        underlying.approve(address(conicPool), DEPOSIT_AMOUNT);
-
-        vm.prank(bb8);
-        conicPool.deposit(DEPOSIT_AMOUNT, 0);
+        _deposit();
 
         vm.warp(block.timestamp + 86400);
 
@@ -463,12 +411,7 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
 
         assertTrue(rewardManager.feesEnabled());
 
-        uint256 DEPOSIT_AMOUNT = 10_000 * 10 ** underlying.decimals();
-        vm.prank(bb8);
-        underlying.approve(address(conicPool), DEPOSIT_AMOUNT);
-        vm.prank(bb8);
-        conicPool.deposit(DEPOSIT_AMOUNT, 0);
-
+        _deposit();
         inflationManager.updatePoolWeights();
         IBooster(controller.convexBooster()).earmarkRewards(ConvexPid.TRI_POOL);
 
@@ -504,5 +447,17 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
         controller.setConvexHandler(address(new ConvexHandler(address(controller))));
         vm.expectRevert();
         _testClaimEarningsWithNewCVXCliff();
+    }
+
+    function _deposit() internal {
+        _deposit(DEPOSIT_AMOUNT / (10 ** underlying.decimals()));
+    }
+
+    function _deposit(uint256 unscaledAmount) internal {
+        uint256 amount = unscaledAmount * 10 ** underlying.decimals();
+        vm.prank(bb8);
+        underlying.approve(address(conicPool), amount);
+        vm.prank(bb8);
+        conicPool.deposit(amount, 0);
     }
 }
