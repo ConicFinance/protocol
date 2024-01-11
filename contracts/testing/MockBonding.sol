@@ -6,19 +6,15 @@ import "../../interfaces/tokenomics/IBonding.sol";
 contract MockBonding is IBonding {
     function startBonding() external override {}
 
-    function setCncStartPrice(uint256 _cncStartPrice) external override {}
+    function setCncStartPrice(uint256) external override {}
 
-    function setCncPriceIncreaseFactor(uint256 _priceIncreaseFactor) external override {}
+    function setCncPriceIncreaseFactor(uint256) external override {}
 
-    function setMinBondingAmount(uint256 _minBondingAmount) external override {}
+    function setMinBondingAmount(uint256) external override {}
 
-    function setDebtPool(address _debtPool) external override {}
+    function setDebtPool(address) external override {}
 
-    function bondCncCrvUsd(
-        uint256 lpTokenAmount,
-        uint256 minCncReceived,
-        uint64 cncLockTime
-    ) external override returns (uint256) {
+    function bondCncCrvUsd(uint256, uint256, uint64) external pure override returns (uint256) {
         return 0;
     }
 
@@ -32,7 +28,7 @@ contract MockBonding is IBonding {
 
     function accountCheckpoint(address account) external override {}
 
-    function computeCurrentCncBondPrice() external view override returns (uint256) {
+    function computeCurrentCncBondPrice() external pure override returns (uint256) {
         return 1e18;
     }
 }
