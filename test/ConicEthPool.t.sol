@@ -34,8 +34,8 @@ contract ConicEthPoolTest is ConicPoolBaseTest {
         controller.setAllowedMultipleDepositsWithdraws(bb8, true);
 
         IConicPool.PoolWeight[] memory weights = new IConicPool.PoolWeight[](2);
-        weights[0] = IConicPool.PoolWeight(CurvePools.CBETH_ETH_POOL, 0.4e18);
-        weights[1] = IConicPool.PoolWeight(CurvePools.STETH_ETH_POOL, 0.6e18);
+        weights[0] = IConicPoolWeightManagement.PoolWeight(CurvePools.CBETH_ETH_POOL, 0.4e18);
+        weights[1] = IConicPoolWeightManagement.PoolWeight(CurvePools.STETH_ETH_POOL, 0.6e18);
         _setWeights(address(conicPool), weights);
     }
 
@@ -142,8 +142,8 @@ contract ConicEthPoolTest is ConicPoolBaseTest {
         skip(14 days);
 
         IConicPool.PoolWeight[] memory newWeights = new IConicPool.PoolWeight[](2);
-        newWeights[0] = IConicPool.PoolWeight(CurvePools.CBETH_ETH_POOL, 0.7e18);
-        newWeights[1] = IConicPool.PoolWeight(CurvePools.STETH_ETH_POOL, 0.3e18);
+        newWeights[0] = IConicPoolWeightManagement.PoolWeight(CurvePools.CBETH_ETH_POOL, 0.7e18);
+        newWeights[1] = IConicPoolWeightManagement.PoolWeight(CurvePools.STETH_ETH_POOL, 0.3e18);
         _setWeights(address(conicPool), newWeights);
 
         skip(1 hours);
@@ -200,7 +200,7 @@ contract ConicEthPoolTest is ConicPoolBaseTest {
         );
 
         conicPool.handleInvalidConvexPid(curvePool);
-        assertEq(conicPool.getPoolWeight(curvePool), 0);
+        assertEq(conicPool.getWeight(curvePool), 0);
         _ensureWeightsSumTo1(conicPool);
     }
 
@@ -250,7 +250,7 @@ contract ConicEthPoolTest is ConicPoolBaseTest {
 
         conicPool.handleDepeggedCurvePool(curvePool);
 
-        assertEq(conicPool.getPoolWeight(curvePool), 0);
+        assertEq(conicPool.getWeight(curvePool), 0);
         _ensureWeightsSumTo1(conicPool);
     }
 
@@ -269,8 +269,8 @@ contract ConicEthPoolTest is ConicPoolBaseTest {
         skip(14 days);
 
         IConicPool.PoolWeight[] memory newWeights = new IConicPool.PoolWeight[](2);
-        newWeights[0] = IConicPool.PoolWeight(CurvePools.CBETH_ETH_POOL, 1e18);
-        newWeights[1] = IConicPool.PoolWeight(CurvePools.STETH_ETH_POOL, 0);
+        newWeights[0] = IConicPoolWeightManagement.PoolWeight(CurvePools.CBETH_ETH_POOL, 1e18);
+        newWeights[1] = IConicPoolWeightManagement.PoolWeight(CurvePools.STETH_ETH_POOL, 0);
         _setWeights(address(conicPool), newWeights);
 
         vm.prank(bb8);
@@ -295,8 +295,8 @@ contract ConicEthPoolTest is ConicPoolBaseTest {
         skip(14 days);
 
         IConicPool.PoolWeight[] memory newWeights = new IConicPool.PoolWeight[](2);
-        newWeights[0] = IConicPool.PoolWeight(CurvePools.CBETH_ETH_POOL, 1e18);
-        newWeights[1] = IConicPool.PoolWeight(CurvePools.STETH_ETH_POOL, 0);
+        newWeights[0] = IConicPoolWeightManagement.PoolWeight(CurvePools.CBETH_ETH_POOL, 1e18);
+        newWeights[1] = IConicPoolWeightManagement.PoolWeight(CurvePools.STETH_ETH_POOL, 0);
         _setWeights(address(conicPool), newWeights);
 
         vm.prank(bb8);

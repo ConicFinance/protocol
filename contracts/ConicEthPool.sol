@@ -45,8 +45,9 @@ contract ConicEthPool is BaseConicPool {
 
     function runSanityChecks() public override {
         ICurveRegistryCache curveRegistryCache = controller.curveRegistryCache();
-        for (uint256 i; i < _pools.length(); i++) {
-            address pool_ = _pools.at(i);
+        address[] memory pools = weightManager.allPools();
+        for (uint256 i; i < pools.length; i++) {
+            address pool_ = pools[i];
             controller.poolAdapterFor(pool_).executeSanityCheck(pool_);
             address basePool = curveRegistryCache.basePool(pool_);
             if (basePool != address(0)) {

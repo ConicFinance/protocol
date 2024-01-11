@@ -97,8 +97,6 @@ contract MockPool is IConicPool, Pausable {
 
     function maxIdleCurveLpRatio() external view returns (uint256) {}
 
-    function getPoolWeight(address curvePool) external view returns (uint256) {}
-
     function setMaxIdleCurveLpRatio(uint256 value) external {}
 
     function setMaxDeviation(uint256 maxDeviation_) external override {}
@@ -113,13 +111,15 @@ contract MockPool is IConicPool, Pausable {
 
     function getPoolAtIndex(uint256 _index) external view returns (address) {}
 
+    function isRegisteredPool(address _pool) external view returns (bool) {}
+
     function curveLpOracle() external view returns (IOracle) {}
 
     function tokenOracle() external view returns (IOracle) {}
 
     function claimPoolEarnings() external {}
 
-    function handleInvalidConvexPid(address pool) external {}
+    function handleInvalidConvexPid(address pool) external returns (uint256) {}
 
     function handleDepeggedCurvePool(address curvePool_) external {}
 

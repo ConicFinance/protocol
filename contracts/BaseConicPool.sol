@@ -22,6 +22,7 @@ import "../interfaces/vendor/IBaseRewardPool.sol";
 
 import "./LpToken.sol";
 import "./Pausable.sol";
+import "./ConicPoolWeightManager.sol";
 
 import "../libraries/ScaledMath.sol";
 import "../libraries/ArrayExtensions.sol";
@@ -58,7 +59,6 @@ abstract contract BaseConicPool is IConicPool, Pausable {
     uint256 internal constant _MAX_DEVIATION_UPPER_BOUND = 0.2e18;
     uint256 internal constant _TOTAL_UNDERLYING_CACHE_EXPIRY = 3 days;
     uint256 internal constant _MAX_USD_VALUE_FOR_REMOVING_POOL = 100e18;
-    uint256 internal constant _MAX_CURVE_POOLS = 10;
     uint256 internal constant _MIN_EMERGENCY_REBALANCING_REWARD_FACTOR = 1e18;
     uint256 internal constant _MAX_EMERGENCY_REBALANCING_REWARD_FACTOR = 100e18;
 
@@ -71,6 +71,7 @@ abstract contract BaseConicPool is IConicPool, Pausable {
     ILpToken public immutable override lpToken;
 
     IRewardManager public immutable rewardManager;
+    IConicPoolWeightManager public immutable weightManager;
 
     /// @dev once the deviation gets under this threshold, the reward distribution will be paused
     /// until the next rebalancing. This is expressed as a ratio, scaled with 18 decimals
@@ -98,9 +99,6 @@ abstract contract BaseConicPool is IConicPool, Pausable {
     /// this is 1 (scaled to 18 decimals) for normal rebalancing situations but is set
     /// to `emergencyRebalancingRewardsFactor` when a pool is depegged
     uint256 public rebalancingRewardsFactor;
-
-    EnumerableSet.AddressSet internal _pools;
-    EnumerableMap.AddressToUintMap internal weights; // liquidity allocation weights
 
     /// @dev the absolute value in terms of USD of the total deviation after
     /// the weights have been updated
@@ -130,6 +128,10 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         uint8 decimals = IERC20Metadata(_underlying).decimals();
         lpToken = new LpToken(_controller, address(this), decimals, _lpTokenName, _symbol);
         rewardManager = _rewardManager;
+        weightManager = new ConicPoolWeightManager(
+            IController(_controller),
+            IERC20Metadata(_underlying)
+        );
 
         CVX = IERC20(_cvx);
         CRV = IERC20(_crv);
@@ -256,16 +258,17 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         uint256[] memory allocatedPerPoolCopy = allocatedPerPool.copy();
 
         while (depositsRemaining_ > 0) {
-            (uint256 poolIndex_, uint256 maxDeposit_) = _getDepositPool(
+            (uint256 poolIndex_, uint256 maxDeposit_) = weightManager.getDepositPool(
                 totalAfterDeposit_,
-                allocatedPerPoolCopy
+                allocatedPerPoolCopy,
+                _getMaxDeviation()
             );
             // account for rounding errors
             if (depositsRemaining_ < maxDeposit_ + 1e2) {
                 maxDeposit_ = depositsRemaining_;
             }
 
-            address pool_ = _pools.at(poolIndex_);
+            address pool_ = weightManager.getPoolAtIndex(poolIndex_);
 
             // Depositing into least balanced pool
             uint256 toDeposit_ = _min(depositsRemaining_, maxDeposit_);
@@ -282,33 +285,6 @@ abstract contract BaseConicPool is IConicPool, Pausable {
             depositsRemaining_ -= toDeposit_;
             allocatedPerPoolCopy[poolIndex_] += toDeposit_;
         }
-    }
-
-    function _getDepositPool(
-        uint256 totalUnderlying_,
-        uint256[] memory allocatedPerPool
-    ) internal view returns (uint256 poolIndex, uint256 maxDepositAmount) {
-        uint256 poolsCount_ = allocatedPerPool.length;
-        int256 iPoolIndex = -1;
-        for (uint256 i; i < poolsCount_; i++) {
-            address pool_ = _pools.at(i);
-            uint256 allocatedUnderlying_ = allocatedPerPool[i];
-            uint256 weight_ = weights.get(pool_);
-            uint256 targetAllocation_ = totalUnderlying_.mulDown(weight_);
-            if (allocatedUnderlying_ >= targetAllocation_) continue;
-            // Compute max balance with deviation
-            uint256 weightWithDeviation_ = weight_.mulDown(ScaledMath.ONE + _getMaxDeviation());
-            weightWithDeviation_ = weightWithDeviation_ > ScaledMath.ONE
-                ? ScaledMath.ONE
-                : weightWithDeviation_;
-            uint256 maxBalance_ = totalUnderlying_.mulDown(weightWithDeviation_);
-            uint256 maxDepositAmount_ = maxBalance_ - allocatedUnderlying_;
-            if (maxDepositAmount_ <= maxDepositAmount) continue;
-            maxDepositAmount = maxDepositAmount_;
-            iPoolIndex = int256(i);
-        }
-        require(iPoolIndex > -1, "error retrieving deposit pool");
-        poolIndex = uint256(iPoolIndex);
     }
 
     /// @notice Get current underlying balance of pool
@@ -438,11 +414,12 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         uint256[] memory allocatedPerPoolCopy = allocatedPerPool.copy();
 
         while (withdrawalsRemaining_ > 0) {
-            (uint256 poolIndex_, uint256 maxWithdrawal_) = _getWithdrawPool(
+            (uint256 poolIndex_, uint256 maxWithdrawal_) = weightManager.getWithdrawPool(
                 totalAfterWithdrawal_,
-                allocatedPerPoolCopy
+                allocatedPerPoolCopy,
+                _getMaxDeviation()
             );
-            address pool_ = _pools.at(poolIndex_);
+            address pool_ = weightManager.getPoolAtIndex(poolIndex_);
 
             // Withdrawing from least balanced pool
             uint256 toWithdraw_ = _min(withdrawalsRemaining_, maxWithdrawal_);
@@ -461,115 +438,41 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         }
     }
 
-    function _getWithdrawPool(
-        uint256 totalUnderlying_,
-        uint256[] memory allocatedPerPool
-    ) internal view returns (uint256 withdrawPoolIndex, uint256 maxWithdrawalAmount) {
-        uint256 poolsCount_ = allocatedPerPool.length;
-        int256 iWithdrawPoolIndex = -1;
-        for (uint256 i; i < poolsCount_; i++) {
-            address curvePool_ = _pools.at(i);
-            uint256 weight_ = weights.get(curvePool_);
-            uint256 allocatedUnderlying_ = allocatedPerPool[i];
-
-            // If a pool has a weight of 0,
-            // withdraw from it if it has more than the max lp value
-            if (weight_ == 0) {
-                uint256 price_ = controller.priceOracle().getUSDPrice(address(underlying));
-                uint256 allocatedUsd = (price_ * allocatedUnderlying_) /
-                    10 ** underlying.decimals();
-                if (allocatedUsd >= _MAX_USD_VALUE_FOR_REMOVING_POOL / 2) {
-                    return (uint256(i), allocatedUnderlying_);
-                }
-            }
-
-            uint256 targetAllocation_ = totalUnderlying_.mulDown(weight_);
-            if (allocatedUnderlying_ <= targetAllocation_) continue;
-            uint256 minBalance_ = targetAllocation_ - targetAllocation_.mulDown(_getMaxDeviation());
-            uint256 maxWithdrawalAmount_ = allocatedUnderlying_ - minBalance_;
-            if (maxWithdrawalAmount_ <= maxWithdrawalAmount) continue;
-            maxWithdrawalAmount = maxWithdrawalAmount_;
-            iWithdrawPoolIndex = int256(i);
-        }
-        require(iWithdrawPoolIndex > -1, "error retrieving withdraw pool");
-        withdrawPoolIndex = uint256(iWithdrawPoolIndex);
-    }
-
     function allPools() external view override returns (address[] memory) {
-        return _pools.values();
+        return weightManager.allPools();
     }
 
     function poolsCount() external view override returns (uint256) {
-        return _pools.length();
+        return weightManager.poolsCount();
     }
 
-    function getPoolAtIndex(uint256 _index) external view returns (address) {
-        return _pools.at(_index);
+    function getPoolAtIndex(uint256 _index) external view override returns (address) {
+        return weightManager.getPoolAtIndex(_index);
     }
 
-    function isRegisteredPool(address _pool) public view returns (bool) {
-        return _pools.contains(_pool);
-    }
-
-    function getPoolWeight(address _pool) external view returns (uint256) {
-        (, uint256 _weight) = weights.tryGet(_pool);
-        return _weight;
+    function isRegisteredPool(address _pool) external view returns (bool) {
+        return weightManager.isRegisteredPool(_pool);
     }
 
     // Controller and Admin functions
 
     function addPool(address _pool) external override onlyOwner {
-        require(_pools.length() < _MAX_CURVE_POOLS, "max pools reached");
-        require(!_pools.contains(_pool), "pool already added");
-        IPoolAdapter poolAdapter = controller.poolAdapterFor(_pool);
-        bool supported_ = poolAdapter.supportsAsset(_pool, address(underlying));
-        require(supported_, "coin not in pool");
-        address lpToken_ = poolAdapter.lpToken(_pool);
-        require(controller.priceOracle().isTokenSupported(lpToken_), "cannot price LP Token");
-
+        weightManager.addPool(_pool);
         address booster = controller.convexBooster();
+        address lpToken_ = controller.poolAdapterFor(_pool).lpToken(_pool);
         IERC20(lpToken_).safeApprove(booster, type(uint256).max);
-
-        if (!weights.contains(_pool)) weights.set(_pool, 0);
-        require(_pools.add(_pool), "failed to add pool");
-        emit CurvePoolAdded(_pool);
     }
 
-    // This requires that the weight of the pool is first set to 0
     function removePool(address _pool) external override onlyOwner {
-        require(_pools.contains(_pool), "pool not added");
-        require(_pools.length() > 1, "cannot remove last pool");
-        IPoolAdapter poolAdapter = controller.poolAdapterFor(_pool);
-        address lpToken_ = poolAdapter.lpToken(_pool);
-        uint256 usdValue = poolAdapter.computePoolValueInUSD(address(this), _pool);
-        require(usdValue < _MAX_USD_VALUE_FOR_REMOVING_POOL, "pool has allocated funds");
-        uint256 weight = weights.get(_pool);
-        IERC20(lpToken_).safeApprove(controller.convexBooster(), 0);
-        require(weight == 0, "pool has weight set");
-        require(_pools.remove(_pool), "pool not removed");
-        require(weights.remove(_pool), "weight not removed");
-        emit CurvePoolRemoved(_pool);
+        weightManager.removePool(_pool);
+        address booster = controller.convexBooster();
+        address lpToken_ = controller.poolAdapterFor(_pool).lpToken(_pool);
+        IERC20(lpToken_).safeApprove(booster, 0);
     }
 
     function updateWeights(PoolWeight[] memory poolWeights) external onlyController {
         runSanityChecks();
-
-        require(poolWeights.length == _pools.length(), "invalid pool weights");
-        uint256 total;
-
-        address previousPool;
-        for (uint256 i; i < poolWeights.length; i++) {
-            address pool = poolWeights[i].poolAddress;
-            require(pool > previousPool, "pools not sorted");
-            require(isRegisteredPool(pool), "pool is not registered");
-            uint256 newWeight = poolWeights[i].weight;
-            weights.set(pool, newWeight);
-            emit NewWeight(pool, newWeight);
-            total += newWeight;
-            previousPool = pool;
-        }
-
-        require(total == ScaledMath.ONE, "weights do not sum to 1");
+        weightManager.updateWeights(poolWeights);
 
         (
             uint256 totalUnderlying_,
@@ -577,7 +480,10 @@ abstract contract BaseConicPool is IConicPool, Pausable {
             uint256[] memory allocatedPerPool
         ) = getTotalAndPerPoolUnderlying();
 
-        uint256 totalDeviation = _computeTotalDeviation(totalUnderlying_, allocatedPerPool);
+        uint256 totalDeviation = weightManager.computeTotalDeviation(
+            totalUnderlying_,
+            allocatedPerPool
+        );
         totalDeviationAfterWeightUpdate = totalDeviation;
         rebalancingRewardActive =
             rebalancingRewardsEnabled &&
@@ -612,15 +518,22 @@ abstract contract BaseConicPool is IConicPool, Pausable {
     function handleDepeggedCurvePool(address curvePool_) external override {
         runSanityChecks();
 
-        // Validation
-        require(isRegisteredPool(curvePool_), "pool is not registered");
-        require(weights.get(curvePool_) != 0, "pool weight already 0");
         require(!_isAssetDepegged(address(underlying)), "underlying is depegged");
         require(_isPoolDepegged(curvePool_), "pool is not depegged");
 
-        // Set target curve pool weight to 0
-        // Scale up other weights to compensate
-        _setWeightToZero(curvePool_);
+        weightManager.handleDepeggedCurvePool(curvePool_);
+
+        // Updating total deviation
+        (
+            uint256 totalUnderlying_,
+            ,
+            uint256[] memory allocatedPerPool
+        ) = getTotalAndPerPoolUnderlying();
+        uint256 totalDeviation = weightManager.computeTotalDeviation(
+            totalUnderlying_,
+            allocatedPerPool
+        );
+        totalDeviationAfterWeightUpdate = totalDeviation;
 
         if (rebalancingRewardsEnabled) {
             IPoolAdapter poolAdapter = controller.poolAdapterFor(curvePool_);
@@ -637,66 +550,16 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         emit HandledDepeggedCurvePool(curvePool_);
     }
 
-    function _setWeightToZero(address zeroedPool) internal {
-        uint256 weight_ = weights.get(zeroedPool);
-        if (weight_ == 0) return;
-        require(weight_ != ScaledMath.ONE, "can't remove last pool");
-        uint256 scaleUp_ = ScaledMath.ONE.divDown(ScaledMath.ONE - weights.get(zeroedPool));
-        uint256 curvePoolLength_ = _pools.length();
-
-        weights.set(zeroedPool, 0);
-        emit NewWeight(zeroedPool, 0);
-
-        address[] memory nonZeroPools = new address[](curvePoolLength_ - 1);
-        uint256[] memory nonZeroWeights = new uint256[](curvePoolLength_ - 1);
-        uint256 nonZeroPoolsCount;
-        for (uint256 i; i < curvePoolLength_; i++) {
-            address pool = _pools.at(i);
-            uint256 currentWeight = weights.get(pool);
-            if (currentWeight == 0) continue;
-            nonZeroPools[nonZeroPoolsCount] = pool;
-            nonZeroWeights[nonZeroPoolsCount] = currentWeight;
-            nonZeroPoolsCount++;
-        }
-
-        uint256 totalWeight;
-        for (uint256 i; i < nonZeroPoolsCount; i++) {
-            address pool_ = nonZeroPools[i];
-            uint256 newWeight_ = nonZeroWeights[i].mulDown(scaleUp_);
-            // ensure that the sum of the weights is 1 despite potential rounding errors
-            if (i == nonZeroPoolsCount - 1) {
-                newWeight_ = ScaledMath.ONE - totalWeight;
-            }
-            totalWeight += newWeight_;
-            weights.set(pool_, newWeight_);
-            emit NewWeight(pool_, newWeight_);
-        }
-
-        // Updating total deviation
-        (
-            uint256 totalUnderlying_,
-            ,
-            uint256[] memory allocatedPerPool
-        ) = getTotalAndPerPoolUnderlying();
-        uint256 totalDeviation = _computeTotalDeviation(totalUnderlying_, allocatedPerPool);
-        totalDeviationAfterWeightUpdate = totalDeviation;
-    }
-
     /**
      * @notice Allows anyone to set the weight of a Curve pool to 0 if the Convex pool for the
      * associated PID has been shut down. This is a very unlikely outcome and the method does
      * not reenable rebalancing rewards.
      * @param curvePool_ Curve pool for which the Convex PID is invalid (has been shut down)
      */
-    function handleInvalidConvexPid(address curvePool_) external {
-        runSanityChecks();
-
-        require(isRegisteredPool(curvePool_), "curve pool not registered");
-        ICurveRegistryCache registryCache_ = controller.curveRegistryCache();
-        uint256 pid = registryCache_.getPid(curvePool_);
-        require(registryCache_.isShutdownPid(pid), "convex pool pid is not shut down");
-        _setWeightToZero(curvePool_);
+    function handleInvalidConvexPid(address curvePool_) external override returns (uint256) {
+        uint256 pid = weightManager.handleInvalidConvexPid(curvePool_);
         emit HandledInvalidConvexPid(curvePool_, pid);
+        return pid;
     }
 
     function setMaxIdleCurveLpRatio(uint256 maxIdleCurveLpRatio_) external onlyOwner {
@@ -713,26 +576,21 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         emit MaxDeviationUpdated(maxDeviation_);
     }
 
-    function getWeight(address pool) external view returns (uint256) {
-        return weights.get(pool);
+    function getWeight(address curvePool) external view override returns (uint256) {
+        return weightManager.getWeight(curvePool);
     }
 
     function getWeights() external view override returns (PoolWeight[] memory) {
-        uint256 length_ = _pools.length();
-        PoolWeight[] memory weights_ = new PoolWeight[](length_);
-        for (uint256 i; i < length_; i++) {
-            (address pool_, uint256 weight_) = weights.at(i);
-            weights_[i] = PoolWeight(pool_, weight_);
-        }
-        return weights_;
+        return weightManager.getWeights();
     }
 
     function getAllocatedUnderlying() external view override returns (PoolWithAmount[] memory) {
-        PoolWithAmount[] memory perPoolAllocated = new PoolWithAmount[](_pools.length());
+        address[] memory pools = weightManager.allPools();
+        PoolWithAmount[] memory perPoolAllocated = new PoolWithAmount[](pools.length);
         (, , uint256[] memory allocated) = getTotalAndPerPoolUnderlying();
 
         for (uint256 i; i < perPoolAllocated.length; i++) {
-            perPoolAllocated[i] = PoolWithAmount(_pools.at(i), allocated[i]);
+            perPoolAllocated[i] = PoolWithAmount(pools[i], allocated[i]);
         }
         return perPoolAllocated;
     }
@@ -743,7 +601,7 @@ abstract contract BaseConicPool is IConicPool, Pausable {
             uint256 allocatedUnderlying_,
             uint256[] memory perPoolUnderlying
         ) = getTotalAndPerPoolUnderlying();
-        return _computeTotalDeviation(allocatedUnderlying_, perPoolUnderlying);
+        return weightManager.computeTotalDeviation(allocatedUnderlying_, perPoolUnderlying);
     }
 
     function cachedTotalUnderlying() public view virtual override returns (uint256) {
@@ -790,9 +648,10 @@ abstract contract BaseConicPool is IConicPool, Pausable {
     }
 
     function _updateAdapterCachedPrices() internal {
-        uint256 poolsLength_ = _pools.length();
+        address[] memory pools = weightManager.allPools();
+        uint256 poolsLength_ = pools.length;
         for (uint256 i; i < poolsLength_; i++) {
-            address pool_ = _pools.at(i);
+            address pool_ = pools[i];
             IPoolAdapter poolAdapter = controller.poolAdapterFor(pool_);
             poolAdapter.updatePriceCache(pool_);
         }
@@ -817,11 +676,12 @@ abstract contract BaseConicPool is IConicPool, Pausable {
             uint256[] memory perPoolUnderlying_
         )
     {
-        uint256 poolsLength_ = _pools.length();
+        address[] memory pools = weightManager.allPools();
+        uint256 poolsLength_ = pools.length;
         perPoolUnderlying_ = new uint256[](poolsLength_);
 
         for (uint256 i; i < poolsLength_; i++) {
-            address pool_ = _pools.at(i);
+            address pool_ = pools[i];
             uint256 poolUnderlying_ = controller.poolAdapterFor(pool_).computePoolValueInUnderlying(
                 address(this),
                 pool_,
@@ -835,19 +695,6 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         totalUnderlying_ = totalAllocated_ + underlying.balanceOf(address(this));
     }
 
-    function _computeTotalDeviation(
-        uint256 allocatedUnderlying_,
-        uint256[] memory perPoolAllocations_
-    ) internal view returns (uint256) {
-        uint256 totalDeviation;
-        for (uint256 i; i < perPoolAllocations_.length; i++) {
-            uint256 weight = weights.get(_pools.at(i));
-            uint256 targetAmount = allocatedUnderlying_.mulDown(weight);
-            totalDeviation += targetAmount.absSub(perPoolAllocations_[i]);
-        }
-        return totalDeviation;
-    }
-
     function _handleRebalancingRewards(
         address account,
         uint256 allocatedBalanceBefore_,
@@ -856,11 +703,11 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         uint256[] memory allocatedPerPoolAfter
     ) internal {
         if (!rebalancingRewardActive) return;
-        uint256 deviationBefore = _computeTotalDeviation(
+        uint256 deviationBefore = weightManager.computeTotalDeviation(
             allocatedBalanceBefore_,
             allocatedPerPoolBefore
         );
-        uint256 deviationAfter = _computeTotalDeviation(
+        uint256 deviationAfter = weightManager.computeTotalDeviation(
             allocatedBalanceAfter_,
             allocatedPerPoolAfter
         );
@@ -884,36 +731,16 @@ abstract contract BaseConicPool is IConicPool, Pausable {
         uint256[] memory allocatedPerPool_,
         uint256 totalAllocated_
     ) internal view returns (bool) {
-        if (totalAllocated_ == 0) return true;
-        for (uint256 i; i < allocatedPerPool_.length; i++) {
-            uint256 weight_ = weights.get(_pools.at(i));
-            uint256 currentAllocated_ = allocatedPerPool_[i];
-
-            // If a curve pool has a weight of 0,
-            if (weight_ == 0) {
-                uint256 price_ = controller.priceOracle().getUSDPrice(address(underlying));
-                uint256 allocatedUsd_ = (price_ * currentAllocated_) / 10 ** underlying.decimals();
-                if (allocatedUsd_ >= _MAX_USD_VALUE_FOR_REMOVING_POOL / 2) {
-                    return false;
-                }
-                continue;
-            }
-
-            uint256 targetAmount = totalAllocated_.mulDown(weight_);
-            uint256 deviation = targetAmount.absSub(currentAllocated_);
-            uint256 deviationRatio = deviation.divDown(targetAmount);
-
-            if (deviationRatio > maxDeviation) return false;
-        }
-        return true;
+        return weightManager.isBalanced(allocatedPerPool_, totalAllocated_, maxDeviation);
     }
 
     function getAllUnderlyingCoins() public view returns (address[] memory) {
-        uint256 poolsLength_ = _pools.length();
+        address[] memory pools = weightManager.allPools();
+        uint256 poolsLength_ = pools.length;
         address[] memory underlyings_ = new address[](0);
 
         for (uint256 i; i < poolsLength_; i++) {
-            address pool_ = _pools.at(i);
+            address pool_ = pools[i];
             address[] memory coins = controller.poolAdapterFor(pool_).getAllUnderlyingCoins(pool_);
             underlyings_ = underlyings_.concat(coins);
         }

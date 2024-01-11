@@ -4,6 +4,7 @@ pragma solidity 0.8.17;
 import "./ConicTest.sol";
 import "./ConicPoolBaseTest.sol";
 
+import "../interfaces/pools/IConicPoolWeightManagement.sol";
 import "../interfaces/IConicDebtToken.sol";
 import "../contracts/testing/MockConicDebtToken.sol";
 import "../interfaces/tokenomics/IDebtPool.sol";
@@ -42,9 +43,10 @@ contract DebtPoolTest is ConicPoolBaseTest {
         // crvUsd pool setup
         crvusdPool.addPool(CurvePools.CRVUSD_USDT);
         crvusdPool.addPool(CurvePools.CRVUSD_USDC);
-        IConicPool.PoolWeight[] memory weights = new IConicPool.PoolWeight[](2);
-        weights[0] = IConicPool.PoolWeight(CurvePools.CRVUSD_USDT, 0.6e18);
-        weights[1] = IConicPool.PoolWeight(CurvePools.CRVUSD_USDC, 0.4e18);
+        IConicPoolWeightManagement.PoolWeight[]
+            memory weights = new IConicPoolWeightManagement.PoolWeight[](2);
+        weights[0] = IConicPoolWeightManagement.PoolWeight(CurvePools.CRVUSD_USDT, 0.6e18);
+        weights[1] = IConicPoolWeightManagement.PoolWeight(CurvePools.CRVUSD_USDC, 0.4e18);
         _setWeights(address(crvusdPool), weights);
 
         bonding = _createBonding(locker, controller, crvusdPool, 7 days, 52);

@@ -6,8 +6,9 @@ import "./IRewardManager.sol";
 import "../IOracle.sol";
 import "../IController.sol";
 import "../IPausable.sol";
+import "./IConicPoolWeightManagement.sol";
 
-interface IConicPool is IPausable {
+interface IConicPool is IConicPoolWeightManagement, IPausable {
     event Deposit(
         address indexed sender,
         address indexed receiver,
@@ -28,11 +29,6 @@ interface IConicPool is IPausable {
     event RebalancingRewardsEnabledSet(bool enabled);
     event EmergencyRebalancingRewardFactorUpdated(uint256 factor);
 
-    struct PoolWeight {
-        address poolAddress;
-        uint256 weight;
-    }
-
     struct PoolWithAmount {
         address poolAddress;
         uint256 amount;
@@ -47,8 +43,6 @@ interface IConicPool is IPausable {
     function depegThreshold() external view returns (uint256);
 
     function maxIdleCurveLpRatio() external view returns (uint256);
-
-    function getPoolWeight(address curvePool) external view returns (uint256);
 
     function setMaxIdleCurveLpRatio(uint256 value) external;
 
@@ -75,12 +69,6 @@ interface IConicPool is IPausable {
 
     function usdExchangeRate() external view returns (uint256);
 
-    function allPools() external view returns (address[] memory);
-
-    function poolsCount() external view returns (uint256);
-
-    function getPoolAtIndex(uint256 _index) external view returns (address);
-
     function unstakeAndWithdraw(uint256 _amount, uint256 _minAmount) external returns (uint256);
 
     function unstakeAndWithdraw(
@@ -93,17 +81,7 @@ interface IConicPool is IPausable {
 
     function withdraw(uint256 _amount, uint256 _minAmount, address _to) external returns (uint256);
 
-    function updateWeights(PoolWeight[] memory poolWeights) external;
-
-    function getWeight(address curvePool) external view returns (uint256);
-
-    function getWeights() external view returns (PoolWeight[] memory);
-
     function getAllocatedUnderlying() external view returns (PoolWithAmount[] memory);
-
-    function removePool(address pool) external;
-
-    function addPool(address pool) external;
 
     function rebalancingRewardActive() external view returns (bool);
 
@@ -129,15 +107,11 @@ interface IConicPool is IPausable {
     /// not need a precise value
     function cachedTotalUnderlying() external view returns (uint256);
 
-    function handleInvalidConvexPid(address pool) external;
-
     function updateRewardSpendingApproval(address token, bool approved) external;
 
     function shutdownPool() external;
 
     function isShutdown() external view returns (bool);
-
-    function handleDepeggedCurvePool(address curvePool_) external;
 
     function isBalanced() external view returns (bool);
 
