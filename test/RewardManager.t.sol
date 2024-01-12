@@ -27,7 +27,8 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
         ICurvePoolV2(0x838af967537350D2C44ABB8c010E49E32673ab94);
     address public constant GOVERNANCE_PROXY = address(0xCb7c67bDde9F7aF0667E8d82bb87F1432Bd1d902);
     uint256 public DEPOSIT_AMOUNT;
-    uint256 public CLIFFS_REMAINING = 7;
+    uint256 internal constant _CLIFF_COUNT = 1000;
+    uint256 internal constant _CLIFF_SIZE = 100_000e18;
 
     function setUp() public override {
         super.setUp();
@@ -156,12 +157,13 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
         vm.warp(block.timestamp + 86400);
         rewardManager.poolCheckpoint();
 
+        IBooster(controller.convexBooster()).earmarkRewards(ConvexPid.TRI_POOL);
         (uint256 cncEarned, uint256 crvEarned, uint256 cvxEarned) = rewardManager.claimableRewards(
             bb8
         );
-        assertTrue(cncEarned > 0);
-        assertTrue(crvEarned > 0);
-        assertTrue(cvxEarned > 0);
+        assertGt(cncEarned, 0);
+        assertGt(crvEarned, 0);
+        assertGt(cvxEarned, 0);
 
         uint256 cncIdleBalance = IERC20(Tokens.CNC).balanceOf(address(conicPool));
         uint256 crvIdleBalance = IERC20(Tokens.CRV).balanceOf(address(conicPool));
@@ -171,9 +173,9 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
         address rewardPool = controller.curveRegistryCache().getRewardPool(CurvePools.TRI_POOL);
         IBaseRewardPool(rewardPool).getReward(address(conicPool), true);
 
-        assertTrue(IERC20(Tokens.CNC).balanceOf(address(conicPool)) == cncIdleBalance);
-        assertTrue(IERC20(Tokens.CRV).balanceOf(address(conicPool)) > crvIdleBalance);
-        assertTrue(IERC20(Tokens.CVX).balanceOf(address(conicPool)) > cvxIdleBalance);
+        assertEq(IERC20(Tokens.CNC).balanceOf(address(conicPool)), cncIdleBalance);
+        assertGt(IERC20(Tokens.CRV).balanceOf(address(conicPool)), crvIdleBalance);
+        assertGt(IERC20(Tokens.CVX).balanceOf(address(conicPool)), cvxIdleBalance);
 
         (
             uint256 cncEarnedPostClaim,
@@ -189,9 +191,9 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
 
         (cncEarned, crvEarned, cvxEarned) = rewardManager.claimableRewards(bb8);
 
-        assertTrue(cncEarned > cncEarnedPostClaim);
-        assertTrue(crvEarned > crvEarnedPostClaim);
-        assertTrue(cvxEarned > cvxEarnedPostClaim);
+        assertGt(cncEarned, cncEarnedPostClaim);
+        assertGt(crvEarned, crvEarnedPostClaim);
+        assertGt(cvxEarned, cvxEarnedPostClaim);
 
         vm.prank(bb8);
         rewardManager.claimEarnings();
@@ -250,16 +252,6 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
         vm.prank(address(0xF403C135812408BFbE8713b5A23a04b3D48AAE31));
         CVXMinter(Tokens.CVX).mint(Tokens.CVX, crvNeededUntilNextCliff + 1e18); // add 1 extra CVX to avoid imprecisions
         // mint to CVX contract so that no account balances are manipulated
-
-        currentCliff = (IERC20(Tokens.CVX).totalSupply()) / (reductionPerCliff);
-
-        cliffsLeft = totalCliffs - currentCliff;
-        totalSupply = IERC20(Tokens.CVX).totalSupply();
-
-        cvxNeededUntilNextCliff = 100_000e18 - (totalSupply % 100_000e18);
-        currentCliff = totalSupply / (reductionPerCliff);
-        crvNeededUntilNextCliff = ((cvxNeededUntilNextCliff / ((cliffsLeft * 1e18) / totalCliffs)) *
-            1e18);
     }
 
     function _advanceCVXSupplyToBeWithinThreshold(uint256 cliffThreshold) internal {
@@ -383,8 +375,11 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
 
         vm.warp(block.timestamp + 86400);
         _testPositiveClaim();
+        uint256 cvxTotalSupply = IERC20(Tokens.CVX).totalSupply();
+        uint256 currentCliff = cvxTotalSupply / _CLIFF_SIZE;
+        uint256 cliffsRemaining = _CLIFF_COUNT - currentCliff;
 
-        for (uint256 i; i < CLIFFS_REMAINING - 1; i++) {
+        for (uint256 i; i < cliffsRemaining - 1; i++) {
             _advanceCVXCliff();
             vm.warp(block.timestamp + 86400);
             _testPositiveClaim();
@@ -411,6 +406,7 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
     }
 
     function _testPositiveClaim() internal {
+        IBooster(controller.convexBooster()).earmarkRewards(ConvexPid.TRI_POOL);
         assertGt(convexHandler.getCrvEarnedBatch(address(conicPool), conicPool.allPools()), 0);
         (uint256 cncBalance, uint256 crvBalance, uint256 cvxBalance) = rewardManager
             .claimableRewards(bb8);

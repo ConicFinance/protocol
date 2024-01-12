@@ -38,6 +38,10 @@ commands:
             chmod +x /tmp/foundryup
             mkdir -p $HOME/.foundry/bin $HOME/.foundry/share/man/man1
             PATH=$HOME/.foundry/bin:$PATH /tmp/foundryup
+      - restore_cache:
+          name: Restore RPC cache
+          keys:
+            - v1-foundry-rpc-cache
 jobs:
   foundry_integration_tests:
     executor: python/default
@@ -60,7 +64,11 @@ jobs:
       - run:
           name: Run Foundry Unit Tests
           no_output_timeout: 20m
-          command: $HOME/.foundry/bin/forge test --nmc 'ProtocolIntegration|WeightUpdateTest' -vv --compute-units-per-second 150 --fork-url $MAINNET_RPC_URL --fork-retry-backoff 200
+          command: $HOME/.foundry/bin/forge test --nmc 'ProtocolIntegration|WeightUpdateTest|InflationRedirectionPoolTest' -vv
+      - save_cache:
+          name: Save RPC cache
+          paths: [~/.foundry/cache/rpc]
+          key: v1-foundry-rpc-cache
   deploy_mainnet:
     executor: python/default
     resource_class: small

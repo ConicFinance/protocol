@@ -133,7 +133,7 @@ contract ConicTest is Test {
 
     function setUp() public virtual {
         string memory MAINNET_RPC_URL = vm.envString("MAINNET_RPC_URL");
-        mainnetFork = vm.createFork(MAINNET_RPC_URL, 18_290_001);
+        mainnetFork = vm.createFork(MAINNET_RPC_URL, 18991441);
     }
 
     function _setFork(uint256 forkId) internal {
@@ -214,7 +214,10 @@ contract ConicTest is Test {
     }
 
     function _createCurveLpOracle(Controller controller) internal returns (CurveLPOracle) {
-        return new CurveLPOracle(address(controller));
+        CurveLPOracle curveLpOracle = new CurveLPOracle(address(controller));
+        curveLpOracle.setImbalanceThreshold(Tokens.SUSD, 156e14);
+        curveLpOracle.setImbalanceThreshold(Tokens.ST_ETH, 91e14);
+        return curveLpOracle;
     }
 
     function _createCurveAdapter(Controller controller) internal returns (IPoolAdapter) {

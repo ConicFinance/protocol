@@ -360,6 +360,12 @@ contract BondingTest is ConicPoolBaseTest {
     }
 
     function testRewardTokensGoToClaimPool() public {
+        setTokenBalance(r2, address(underlying), 5 * 10 ** decimals);
+        vm.startPrank(r2);
+        underlying.approve(address(crvusdPool), 5 * 10 ** decimals);
+        crvusdPool.deposit(5 * 10 ** decimals, 1, true);
+        vm.stopPrank();
+
         bonding.setDebtPool(address(c3po));
 
         vm.startPrank(address(bb8));
