@@ -27,9 +27,9 @@ contract CNCMintingRebalancingRewardsHandler is
     /// @dev the maximum amount of CNC that can be minted for rebalancing rewards
     uint256 internal constant _MAX_REBALANCING_REWARDS = 1_900_000e18; // 19% of total supply
 
-    /// @dev gives out 5 dollars per 1 hour (assuming 1 CNC = 6 USD) for every 10,000 USD in TVL that needs to be shifted
+    /// @dev gives out 5 dollars per 1 hour (assuming 1 CNC = 3 USD) for every 10,000 USD in TVL that needs to be shifted
     uint256 internal constant _INITIAL_REBALANCING_REWARD_PER_DOLLAR_PER_SECOND =
-        5e18 / uint256(3600 * 1 * 10_000 * 6);
+        5e18 / uint256(3600 * 1 * 10_000 * 3);
 
     IController public immutable override controller;
 

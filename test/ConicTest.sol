@@ -123,6 +123,8 @@ contract ConicTest is Test {
 
     bytes32 constant LOCKER_V2_MERKLE_ROOT =
         0x1fb27a93b1597fb63a71400761fa335d34875bc82ed5d1e2182cbb0a966049a7;
+    uint256 internal constant TEST_REBALANCING_REWARD_PER_DOLLAR_PER_SECOND =
+        5e18 / uint256(3600 * 1 * 10_000 * 6);
 
     address public bb8 = makeAddr("bb8"); // 0xE2Fca394F3a28F1717EFAB57339540306F303f6f
     address public r2 = makeAddr("r2"); // 0x2A71967CF1d84B413bb804418b54407822914D80
@@ -240,6 +242,9 @@ contract ConicTest is Test {
                 cnc,
                 ICNCMintingRebalancingRewardsHandler(address(1))
             );
+        rebalancingRewardsHandler.setCncRebalancingRewardPerDollarPerSecond(
+            TEST_REBALANCING_REWARD_PER_DOLLAR_PER_SECOND
+        );
 
         if (_isFork) {
             vm.prank(MainnetAddresses.LP_TOKEN_STAKER);

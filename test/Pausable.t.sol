@@ -41,7 +41,7 @@ contract PausableTest is ConicTest {
 
     function testPause() public {
         vm.expectEmit(true, false, false, false);
-        emit Paused(block.timestamp + 3 hours);
+        emit Paused(block.timestamp + 8 hours);
         vm.prank(bb8);
         pausable.pause();
         assertTrue(pausable.isPaused());
@@ -49,7 +49,7 @@ contract PausableTest is ConicTest {
         pausable.setValue(1);
         assertEq(pausable.value(), 42);
 
-        skip(3 hours + 1);
+        skip(8 hours + 1);
         assertFalse(pausable.isPaused());
         pausable.setValue(1);
         assertEq(pausable.value(), 1);
@@ -59,7 +59,7 @@ contract PausableTest is ConicTest {
         vm.prank(bb8);
         vm.expectRevert("Ownable: caller is not the owner");
         pausable.setPauseDuration(6 hours);
-        assertEq(pausable.pauseDuration(), 3 hours);
+        assertEq(pausable.pauseDuration(), 8 hours);
 
         pausable.setPauseDuration(6 hours);
         assertEq(pausable.pauseDuration(), 6 hours);

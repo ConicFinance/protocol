@@ -26,8 +26,9 @@ contract Bonding is IBonding, Ownable {
     // The price is set in terms of LP tokens, not USD
     uint256 public constant MAX_CNC_START_PRICE = 20e18;
     uint256 public constant MIN_CNC_START_PRICE = 1e18;
-    uint256 public constant MIN_PRICE_INCREASE_FACTOR = 5e17;
+    uint256 public constant MIN_PRICE_INCREASE_FACTOR = 1e18;
     uint256 public constant MAX_MIN_BONDING_AMOUNT = 1_000e18;
+    uint256 public constant INITIAL_MIN_BONDING_AMOUNT = 100e18;
 
     ICNCLockerV3 public immutable cncLocker;
     IController public immutable controller;
@@ -77,6 +78,7 @@ contract Bonding is IBonding, Ownable {
         underlying = crvUsdPool.underlying();
         totalNumberEpochs = _totalNumberEpochs;
         epochDuration = _epochDuration;
+        minBondingAmount = INITIAL_MIN_BONDING_AMOUNT;
     }
 
     function startBonding() external override onlyOwner {

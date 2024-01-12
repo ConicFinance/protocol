@@ -12,7 +12,7 @@ contract ConicDebtToken is IConicDebtToken, ERC20, Ownable {
     using SafeERC20 for IERC20;
     using MerkleProof for MerkleProof.Proof;
 
-    uint256 internal constant MAX_SUPPLY = 5000000e18; // UPDATE to exact amount that was exploited
+    uint256 internal constant MAX_SUPPLY = 4_337_233e18;
     uint256 internal constant CLAIM_DURATION = 30 days * 6;
     address internal constant CRVUSD = address(0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E);
     bytes32 public immutable merkleRootDebtToken;
