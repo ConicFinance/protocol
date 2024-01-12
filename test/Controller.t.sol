@@ -72,12 +72,12 @@ contract ControllerTest is ConicTest {
         address curvePool4 = makeAddr("curve pool 4");
         address curvePool5 = makeAddr("curve pool 5");
         IConicPool.PoolWeight[] memory pool1Weights = new IConicPool.PoolWeight[](2);
-        pool1Weights[0] = IConicPool.PoolWeight(curvePool1, 0.6e18);
-        pool1Weights[1] = IConicPool.PoolWeight(curvePool2, 0.4e18);
+        pool1Weights[0] = IConicPoolWeightManagement.PoolWeight(curvePool1, 0.6e18);
+        pool1Weights[1] = IConicPoolWeightManagement.PoolWeight(curvePool2, 0.4e18);
         IConicPool.PoolWeight[] memory pool2Weights = new IConicPool.PoolWeight[](3);
-        pool2Weights[0] = IConicPool.PoolWeight(curvePool3, 0.2e18);
-        pool2Weights[1] = IConicPool.PoolWeight(curvePool4, 0.7e18);
-        pool2Weights[2] = IConicPool.PoolWeight(curvePool5, 0.1e18);
+        pool2Weights[0] = IConicPoolWeightManagement.PoolWeight(curvePool3, 0.2e18);
+        pool2Weights[1] = IConicPoolWeightManagement.PoolWeight(curvePool4, 0.7e18);
+        pool2Weights[2] = IConicPoolWeightManagement.PoolWeight(curvePool5, 0.1e18);
         IController.WeightUpdate[] memory updates = new IController.WeightUpdate[](2);
         updates[0] = IController.WeightUpdate(address(pool1), pool1Weights);
         updates[1] = IController.WeightUpdate(address(pool2), pool2Weights);

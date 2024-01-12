@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.17;
 
+import "./pools/IConicPoolWeightManagement.sol";
 import "./pools/IConicPool.sol";
 import "./IGenericOracle.sol";
 import "./tokenomics/IInflationManager.sol";
@@ -31,7 +32,7 @@ interface IController {
 
     struct WeightUpdate {
         address conicPoolAddress;
-        IConicPool.PoolWeight[] weights;
+        IConicPoolWeightManagement.PoolWeight[] weights;
     }
 
     function initialize(address _lpTokenStaker) external;

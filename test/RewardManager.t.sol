@@ -54,7 +54,7 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
         conicPool.addPool(CurvePools.TRI_POOL);
 
         IConicPool.PoolWeight[] memory weights = new IConicPool.PoolWeight[](1);
-        weights[0] = IConicPool.PoolWeight(CurvePools.TRI_POOL, 1e18);
+        weights[0] = IConicPoolWeightManagement.PoolWeight(CurvePools.TRI_POOL, 1e18);
         _setWeights(address(conicPool), weights);
 
         IBonding bonding = new MockBonding();

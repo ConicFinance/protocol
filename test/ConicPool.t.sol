@@ -32,8 +32,8 @@ contract ConicPoolTest is ConicPoolBaseTest {
         conicPool.addPool(CurvePools.CRVUSD_USDT);
         conicPool.addPool(CurvePools.CRVUSD_USDC);
         IConicPool.PoolWeight[] memory weights = new IConicPool.PoolWeight[](2);
-        weights[0] = IConicPool.PoolWeight(CurvePools.CRVUSD_USDT, 0.6e18);
-        weights[1] = IConicPool.PoolWeight(CurvePools.CRVUSD_USDC, 0.4e18);
+        weights[0] = IConicPoolWeightManagement.PoolWeight(CurvePools.CRVUSD_USDT, 0.6e18);
+        weights[1] = IConicPoolWeightManagement.PoolWeight(CurvePools.CRVUSD_USDC, 0.4e18);
         _setWeights(address(conicPool), weights);
     }
 
@@ -170,9 +170,12 @@ contract ConicPoolTest is ConicPoolBaseTest {
         conicPool.addPool(CurvePools.TRI_POOL);
         conicPool.addPool(CurvePools.SUSD_DAI_USDT_USDC);
         IConicPool.PoolWeight[] memory newWeights = new IConicPool.PoolWeight[](3);
-        newWeights[0] = IConicPool.PoolWeight(CurvePools.SUSD_DAI_USDT_USDC, 0.1e18);
-        newWeights[1] = IConicPool.PoolWeight(CurvePools.TRI_POOL, 0.3e18);
-        newWeights[2] = IConicPool.PoolWeight(CurvePools.FRAX_3CRV, 0.6e18);
+        newWeights[0] = IConicPoolWeightManagement.PoolWeight(
+            CurvePools.SUSD_DAI_USDT_USDC,
+            0.1e18
+        );
+        newWeights[1] = IConicPoolWeightManagement.PoolWeight(CurvePools.TRI_POOL, 0.3e18);
+        newWeights[2] = IConicPoolWeightManagement.PoolWeight(CurvePools.FRAX_3CRV, 0.6e18);
         skip(14 days);
         _setWeights(address(conicPool), newWeights);
 
@@ -196,8 +199,8 @@ contract ConicPoolTest is ConicPoolBaseTest {
     function testDuplicatedWeights() public {
         skip(14 days);
         IConicPool.PoolWeight[] memory newWeights = new IConicPool.PoolWeight[](2);
-        newWeights[0] = IConicPool.PoolWeight(CurvePools.CRVUSD_USDT, 0.8e18);
-        newWeights[0] = IConicPool.PoolWeight(CurvePools.CRVUSD_USDC, 0.2e18);
+        newWeights[0] = IConicPoolWeightManagement.PoolWeight(CurvePools.CRVUSD_USDT, 0.8e18);
+        newWeights[0] = IConicPoolWeightManagement.PoolWeight(CurvePools.CRVUSD_USDC, 0.2e18);
         vm.expectRevert("pools not sorted");
         _setWeights(address(conicPool), newWeights);
     }
@@ -213,8 +216,8 @@ contract ConicPoolTest is ConicPoolBaseTest {
         skip(14 days);
 
         IConicPool.PoolWeight[] memory newWeights = new IConicPool.PoolWeight[](2);
-        newWeights[0] = IConicPool.PoolWeight(CurvePools.CRVUSD_USDT, 0.8e18);
-        newWeights[1] = IConicPool.PoolWeight(CurvePools.CRVUSD_USDC, 0.2e18);
+        newWeights[0] = IConicPoolWeightManagement.PoolWeight(CurvePools.CRVUSD_USDT, 0.8e18);
+        newWeights[1] = IConicPoolWeightManagement.PoolWeight(CurvePools.CRVUSD_USDC, 0.2e18);
         _setWeights(address(conicPool), newWeights);
 
         skip(1 hours);
@@ -235,8 +238,8 @@ contract ConicPoolTest is ConicPoolBaseTest {
         skip(14 days);
 
         IConicPool.PoolWeight[] memory newWeights = new IConicPool.PoolWeight[](2);
-        newWeights[0] = IConicPool.PoolWeight(CurvePools.CRVUSD_USDT, 0.8e18);
-        newWeights[1] = IConicPool.PoolWeight(CurvePools.CRVUSD_USDC, 0.2e18);
+        newWeights[0] = IConicPoolWeightManagement.PoolWeight(CurvePools.CRVUSD_USDT, 0.8e18);
+        newWeights[1] = IConicPoolWeightManagement.PoolWeight(CurvePools.CRVUSD_USDC, 0.2e18);
         _setWeights(address(conicPool), newWeights);
 
         skip(1 hours);
@@ -293,7 +296,7 @@ contract ConicPoolTest is ConicPoolBaseTest {
         );
 
         conicPool.handleInvalidConvexPid(curvePool);
-        assertEq(conicPool.getPoolWeight(curvePool), 0);
+        assertEq(conicPool.getWeight(curvePool), 0);
         _ensureWeightsSumTo1(conicPool);
     }
 
@@ -329,7 +332,7 @@ contract ConicPoolTest is ConicPoolBaseTest {
         );
         skip(1 hours);
         conicPool.handleDepeggedCurvePool(curvePool);
-        assertEq(conicPool.getPoolWeight(curvePool), 0);
+        assertEq(conicPool.getWeight(curvePool), 0);
         assertTrue(conicPool.rebalancingRewardActive());
         assertEq(conicPool.rebalancingRewardsFactor(), 10e18);
         assertEq(conicPool.rebalancingRewardsActivatedAt(), uint64(block.timestamp));
@@ -339,8 +342,14 @@ contract ConicPoolTest is ConicPoolBaseTest {
     function testHandleDepeggedPoolSumTo1() public {
         conicPool.setRebalancingRewardsEnabled(true);
         IConicPool.PoolWeight[] memory newWeights = new IConicPool.PoolWeight[](2);
-        newWeights[0] = IConicPool.PoolWeight(CurvePools.CRVUSD_USDT, 666666666666666667);
-        newWeights[1] = IConicPool.PoolWeight(CurvePools.CRVUSD_USDC, 333333333333333333);
+        newWeights[0] = IConicPoolWeightManagement.PoolWeight(
+            CurvePools.CRVUSD_USDT,
+            666666666666666667
+        );
+        newWeights[1] = IConicPoolWeightManagement.PoolWeight(
+            CurvePools.CRVUSD_USDC,
+            333333333333333333
+        );
         skip(14 days);
         _setWeights(address(conicPool), newWeights);
 
@@ -359,7 +368,7 @@ contract ConicPoolTest is ConicPoolBaseTest {
             abi.encode((lpTokenPrice * 96) / 100)
         );
         conicPool.handleDepeggedCurvePool(CurvePools.CRVUSD_USDT);
-        assertEq(conicPool.getPoolWeight(CurvePools.CRVUSD_USDT), 0);
+        assertEq(conicPool.getWeight(CurvePools.CRVUSD_USDT), 0);
         _ensureWeightsSumTo1(conicPool);
         assertEq(conicPool.rebalancingRewardActive(), false);
     }
@@ -379,8 +388,8 @@ contract ConicPoolTest is ConicPoolBaseTest {
         skip(14 days);
 
         IConicPool.PoolWeight[] memory newWeights = new IConicPool.PoolWeight[](2);
-        newWeights[0] = IConicPool.PoolWeight(CurvePools.CRVUSD_USDT, 0);
-        newWeights[1] = IConicPool.PoolWeight(CurvePools.CRVUSD_USDC, 1e18);
+        newWeights[0] = IConicPoolWeightManagement.PoolWeight(CurvePools.CRVUSD_USDT, 0);
+        newWeights[1] = IConicPoolWeightManagement.PoolWeight(CurvePools.CRVUSD_USDC, 1e18);
         _setWeights(address(conicPool), newWeights);
 
         vm.prank(bb8);
@@ -405,8 +414,8 @@ contract ConicPoolTest is ConicPoolBaseTest {
         skip(14 days);
 
         IConicPool.PoolWeight[] memory newWeights = new IConicPool.PoolWeight[](2);
-        newWeights[0] = IConicPool.PoolWeight(CurvePools.CRVUSD_USDT, 0);
-        newWeights[1] = IConicPool.PoolWeight(CurvePools.CRVUSD_USDC, 1e18);
+        newWeights[0] = IConicPoolWeightManagement.PoolWeight(CurvePools.CRVUSD_USDT, 0);
+        newWeights[1] = IConicPoolWeightManagement.PoolWeight(CurvePools.CRVUSD_USDC, 1e18);
         _setWeights(address(conicPool), newWeights);
 
         vm.prank(bb8);
@@ -553,8 +562,8 @@ contract ConicPoolTest is ConicPoolBaseTest {
     function testDepositWithAllocationCappedAtOne() public {
         skip(21 days);
         IConicPool.PoolWeight[] memory weights = new IConicPool.PoolWeight[](2);
-        weights[0] = IConicPool.PoolWeight(CurvePools.CRVUSD_USDT, 0.9e18);
-        weights[1] = IConicPool.PoolWeight(CurvePools.CRVUSD_USDC, 0.1e18);
+        weights[0] = IConicPoolWeightManagement.PoolWeight(CurvePools.CRVUSD_USDT, 0.9e18);
+        weights[1] = IConicPoolWeightManagement.PoolWeight(CurvePools.CRVUSD_USDC, 0.1e18);
         _setWeights(address(conicPool), weights);
         conicPool.setMaxDeviation(0.2e18);
 
