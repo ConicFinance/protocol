@@ -254,7 +254,11 @@ contract ConicTest is Test {
         CNCToken cnc
     ) internal returns (LpTokenStaker) {
         IController controller = inflationManager.controller();
-        LpTokenStaker lpTokenStaker = new LpTokenStaker(address(controller), cnc);
+        LpTokenStaker lpTokenStaker = new LpTokenStaker(
+            address(controller),
+            cnc,
+            MainnetAddresses.MULTISIG
+        );
         if (_isFork) {
             vm.prank(MainnetAddresses.LP_TOKEN_STAKER);
         }

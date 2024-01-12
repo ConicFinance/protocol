@@ -36,6 +36,7 @@ contract LpTokenStaker is ILpTokenStaker {
 
     IController public immutable controller;
     ICNCToken public immutable cnc;
+    address internal immutable _treasury;
 
     bool public isShutdown;
 
@@ -44,10 +45,11 @@ contract LpTokenStaker is ILpTokenStaker {
         _;
     }
 
-    constructor(address controller_, ICNCToken _cnc) {
+    constructor(address controller_, ICNCToken cnc_, address treasury_) {
         controller = IController(controller_);
-        cnc = _cnc;
+        cnc = cnc_;
         _initializeLastUpdated();
+        _treasury = treasury_;
     }
 
     function stake(uint256 amount, address conicPool) external override {
@@ -112,10 +114,17 @@ contract LpTokenStaker is ILpTokenStaker {
 
     function shutdown() external {
         require(msg.sender == address(controller), "LpTokenStaker: not controller");
+
+        // Claim all rewards
         address[] memory pools = controller.listPools();
         for (uint256 i; i < pools.length; i++) {
             _claimCNCRewardsForPool(pools[i]);
         }
+
+        // Transfer all idle CNC to treasury
+        uint256 idleCnc = cnc.balanceOf(address(this));
+        if (idleCnc > 0) IERC20(address(cnc)).transfer(_treasury, idleCnc);
+
         isShutdown = true;
         emit Shutdown();
     }
@@ -182,9 +191,17 @@ contract LpTokenStaker is ILpTokenStaker {
         if (cncToMint == 0) {
             return;
         }
-        cnc.mint(address(pool), cncToMint);
+        uint256 idleCnc = cnc.balanceOf(address(this));
+        if (idleCnc > 0) {
+            if (idleCnc > cncToMint) idleCnc = cncToMint;
+            IERC20(address(cnc)).transfer(address(pool), idleCnc);
+            cncToMint -= idleCnc;
+        }
+        if (cncToMint > 0) {
+            cnc.mint(address(pool), cncToMint);
+        }
         poolShares[pool] = 0;
-        emit TokensClaimed(pool, cncToMint);
+        emit TokensClaimed(pool, cncToMint + idleCnc);
     }
 
     function claimableCnc(address pool) public view override returns (uint256) {

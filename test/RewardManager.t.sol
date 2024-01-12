@@ -89,6 +89,52 @@ contract RewardManagerV2Test is ConicPoolBaseTest {
         _testPositiveClaim();
     }
 
+    function testClaimRewardsWithSomeIdleCnc() external {
+        _deposit();
+
+        vm.warp(block.timestamp + 86400);
+
+        (uint256 cncAmount, , ) = rewardManager.claimableRewards(bb8);
+
+        uint256 idleAmount = cncAmount / 3;
+        vm.prank(MainnetAddresses.LP_TOKEN_STAKER);
+        cnc.mint(address(lpTokenStaker), idleAmount);
+        assertEq(cnc.balanceOf(address(lpTokenStaker)), idleAmount, "idle amount incorrect");
+        uint256 totalSupplyBefore = cnc.totalSupply();
+        _testPositiveClaim();
+        assertEq(cnc.balanceOf(address(lpTokenStaker)), 0, "idle amount should be zero");
+        uint256 totalSupplyAfter = cnc.totalSupply();
+        assertApproxEqRel(
+            totalSupplyAfter - totalSupplyBefore,
+            cncAmount - idleAmount,
+            0.0001e18,
+            "total supply incorrect"
+        );
+    }
+
+    function testClaimRewardsWithAllIdleCnc() external {
+        _deposit();
+
+        vm.warp(block.timestamp + 86400);
+
+        (uint256 cncAmount, , ) = rewardManager.claimableRewards(bb8);
+
+        uint256 idleAmount = cncAmount * 3;
+        vm.prank(MainnetAddresses.LP_TOKEN_STAKER);
+        cnc.mint(address(lpTokenStaker), idleAmount);
+        assertEq(cnc.balanceOf(address(lpTokenStaker)), idleAmount, "idle amount incorrect");
+        uint256 totalSupplyBefore = cnc.totalSupply();
+        _testPositiveClaim();
+        assertApproxEqRel(
+            cnc.balanceOf(address(lpTokenStaker)),
+            idleAmount - cncAmount,
+            0.0001e18,
+            "idle amount should decrease"
+        );
+        uint256 totalSupplyAfter = cnc.totalSupply();
+        assertEq(totalSupplyAfter, totalSupplyBefore, "total supply incorrect");
+    }
+
     function testExtraRewardTokens() external {
         rewardManager.addExtraReward(Tokens.SUSHI);
 

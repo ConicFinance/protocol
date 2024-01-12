@@ -166,7 +166,8 @@ contract ControllerTest is ConicTest {
         controller.addPool(address(pool2));
         LpTokenStaker staker = new LpTokenStaker(
             address(controller),
-            ICNCToken(controller.cncToken())
+            ICNCToken(controller.cncToken()),
+            MainnetAddresses.MULTISIG
         );
 
         vm.prank(bb8);
