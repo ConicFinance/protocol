@@ -221,7 +221,7 @@ contract ConicEthPoolTest is ConicPoolBaseTest {
         }
 
         address coin = controller.curveRegistryCache().getAllUnderlyingCoins(curvePool)[1];
-        assertNotEq(coin, Tokens.WETH);
+        assertFalse(coin == Tokens.WETH);
 
         uint256 ethPrice = controller.priceOracle().getUSDPrice(address(0));
         vm.mockCall(

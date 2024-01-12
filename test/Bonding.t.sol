@@ -359,7 +359,7 @@ contract BondingTest is ConicPoolBaseTest {
         bonding.bondCncCrvUsd(300 * 10 ** decimals, 290e18, 180 days);
     }
 
-    function testRewardTokensGoToClaimPool() public {
+    function testRewardTokensGoToDebtPool() public {
         setTokenBalance(r2, address(underlying), 5 * 10 ** decimals);
         vm.startPrank(r2);
         underlying.approve(address(crvusdPool), 5 * 10 ** decimals);

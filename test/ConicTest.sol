@@ -27,6 +27,7 @@ import "../contracts/oracles/CurveLPOracle.sol";
 import "../contracts/oracles/ChainlinkOracle.sol";
 import "../contracts/oracles/CrvUsdOracle.sol";
 import "../contracts/tokenomics/Bonding.sol";
+import "../contracts/tokenomics/DebtPool.sol";
 import "../contracts/testing/MockErc20.sol";
 import "../interfaces/pools/IConicPool.sol";
 
@@ -346,6 +347,10 @@ contract ConicTest is Test {
             _totalNumberEpochs
         );
         return bonding;
+    }
+
+    function _createDebtPool(address debtToken) internal returns (DebtPool) {
+        return new DebtPool(debtToken);
     }
 
     function setTokenBalance(address who, address token, uint256 amt) internal {

@@ -320,7 +320,7 @@ contract ConicPoolTest is ConicPoolBaseTest {
         );
 
         address coin = controller.curveRegistryCache().getAllUnderlyingCoins(curvePool)[0];
-        assertNotEq(coin, address(conicPool.underlying()));
+        assertFalse(coin == address(conicPool.underlying()));
         uint256 price = controller.priceOracle().getUSDPrice(coin);
         vm.mockCall(
             address(controller.priceOracle()),
