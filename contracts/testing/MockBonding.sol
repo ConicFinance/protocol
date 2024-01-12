@@ -31,4 +31,12 @@ contract MockBonding is IBonding {
     function computeCurrentCncBondPrice() external pure override returns (uint256) {
         return 1e18;
     }
+
+    function cncAvailable() external view override returns (uint256) {
+        return 0;
+    }
+
+    function cncBondPrice() external view override returns (uint256) {
+        return 1e18;
+    }
 }

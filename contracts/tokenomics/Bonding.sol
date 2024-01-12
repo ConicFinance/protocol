@@ -44,7 +44,7 @@ contract Bonding is IBonding, Ownable {
     uint256 public bondingEndTime;
 
     uint256 public cncStartPrice;
-    uint256 public cncAvailable;
+    uint256 public cncAvailableCache;
     uint256 public cncDistributed;
     uint256 public epochStartTime; // start time of the current epoch
     uint256 public lastCncPrice;
@@ -94,7 +94,7 @@ contract Bonding is IBonding, Ownable {
         bondingEndTime = block.timestamp + epochDuration * totalNumberEpochs;
 
         bondingStarted = true;
-        cncAvailable = cncPerEpoch;
+        cncAvailableCache = cncPerEpoch;
         emit BondingStarted(cncBalance, totalNumberEpochs);
     }
 
@@ -138,7 +138,7 @@ contract Bonding is IBonding, Ownable {
         uint256 cncToReceive = lpTokenAmount.divDown(currentCncBondPrice);
 
         require(
-            cncToReceive + cncDistributed <= cncAvailable,
+            cncToReceive + cncDistributed <= cncAvailableCache,
             "Not enough CNC currently available"
         );
         require(cncToReceive >= minCncReceived, "Insufficient CNC received");
@@ -215,6 +215,34 @@ contract Bonding is IBonding, Ownable {
         return cncStartPrice.mulDown(discountFactor);
     }
 
+    function cncBondPrice() external view override returns (uint256) {
+        uint256 cncStartPrice_ = cncStartPrice;
+        uint256 epochStartTime_ = epochStartTime;
+
+        bool priceUpdated;
+        while (block.timestamp >= epochStartTime_ + epochDuration) {
+            epochStartTime_ += epochDuration;
+            if (!priceUpdated) {
+                cncStartPrice_ = epochPriceIncreaseFactor.mulDown(lastCncPrice);
+                priceUpdated = true;
+            }
+        }
+
+        uint256 discountFactor = ScaledMath.ONE -
+            (block.timestamp - epochStartTime_).divDown(epochDuration);
+        return cncStartPrice_.mulDown(discountFactor);
+    }
+
+    function cncAvailable() external view override returns (uint256) {
+        uint256 cncAvailable_ = cncAvailableCache;
+        uint256 epochStartTime_ = epochStartTime;
+        while (block.timestamp >= epochStartTime_ + epochDuration) {
+            cncAvailable_ += cncPerEpoch;
+            epochStartTime_ += epochDuration;
+        }
+        return cncAvailable_;
+    }
+
     function _accountCheckpoint(address account) internal {
         _streamCheckpoint();
         uint256 accountBoostedBalance = cncLocker.totalStreamBoost(account);
@@ -256,7 +284,7 @@ contract Bonding is IBonding, Ownable {
     function _updateAvailableCncAndStartPrice() internal {
         bool priceUpdated;
         while (block.timestamp >= epochStartTime + epochDuration) {
-            cncAvailable += cncPerEpoch;
+            cncAvailableCache += cncPerEpoch;
             epochStartTime += epochDuration;
             if (!priceUpdated) {
                 cncStartPrice = epochPriceIncreaseFactor.mulDown(lastCncPrice);

@@ -83,6 +83,7 @@ contract BondingTest is ConicPoolBaseTest {
         crvusdPool.lpToken().approve(address(bonding), 10_000 * 10 ** decimals);
 
         bonding.bondCncCrvUsd(1_000 * 10 ** decimals, 490e18, 180 days);
+        _validateBondPriceAndAvailable();
 
         uint256 cncReceived = cnc.balanceOf(address(locker));
         uint256 crvUsdReceived = lpTokenStaker.getUserBalanceForPool(
@@ -114,6 +115,7 @@ contract BondingTest is ConicPoolBaseTest {
 
         uint256 expectedCncReceived = 333e18;
         bonding.bondCncCrvUsd(1_000 * 10 ** decimals, expectedCncReceived - 5e18, 180 days);
+        _validateBondPriceAndAvailable();
 
         uint256 cncReceived = cnc.balanceOf(address(locker));
         uint256 crvUsdReceived = lpTokenStaker.getUserBalanceForPool(
@@ -139,6 +141,7 @@ contract BondingTest is ConicPoolBaseTest {
         crvusdPool.lpToken().approve(address(bonding), 10_000 * 10 ** decimals);
 
         bonding.bondCncCrvUsd(1_000 * 10 ** decimals, 490e18, 180 days);
+        _validateBondPriceAndAvailable();
 
         assertApproxEqRel(
             bonding.assetsInEpoch(bonding.epochStartTime() + bonding.epochDuration()),
@@ -183,6 +186,7 @@ contract BondingTest is ConicPoolBaseTest {
         // bond crvusd
         crvusdPool.lpToken().approve(address(bonding), 10_000 * 10 ** decimals);
         bonding.bondCncCrvUsd(1_000 * 10 ** decimals, 490e18, 180 days);
+        _validateBondPriceAndAvailable();
         uint256 cncReceived = cnc.balanceOf(address(locker));
         uint256 crvUsdBalance = lpTokenStaker.getUserBalanceForPool(
             address(crvusdPool),
@@ -207,6 +211,7 @@ contract BondingTest is ConicPoolBaseTest {
         // bond crvusd
         crvusdPool.lpToken().approve(address(bonding), 10_000 * 10 ** decimals);
         bonding.bondCncCrvUsd(500 * 10 ** decimals, 245e18, 180 days);
+        _validateBondPriceAndAvailable();
         cncReceived = cnc.balanceOf(address(locker));
         crvUsdBalance = lpTokenStaker.getUserBalanceForPool(address(crvusdPool), address(bonding));
         assertApproxEqRel(cncReceived, 750e18, 0.01e18);
@@ -241,6 +246,7 @@ contract BondingTest is ConicPoolBaseTest {
         vm.stopPrank();
         vm.startPrank(address(bb8));
         bonding.bondCncCrvUsd(1_000 * 10 ** decimals, 490e18, 180 days);
+        _validateBondPriceAndAvailable();
         assertApproxEqRel(
             bonding.assetsInEpoch(bonding.epochStartTime() + bonding.epochDuration()),
             1000e18,
@@ -252,6 +258,7 @@ contract BondingTest is ConicPoolBaseTest {
         vm.stopPrank();
         vm.startPrank(address(c3po));
         bonding.bondCncCrvUsd(1000 * 10 ** decimals, 240e18, 180 days);
+        _validateBondPriceAndAvailable();
         assertApproxEqRel(
             bonding.assetsInEpoch(bonding.epochStartTime() + bonding.epochDuration()),
             1000e18,
@@ -301,6 +308,7 @@ contract BondingTest is ConicPoolBaseTest {
 
         // bond 200o LP tokens for 1000 CNC
         bonding.bondCncCrvUsd(2_000e18, 990e18, 180 days);
+        _validateBondPriceAndAvailable();
 
         assertApproxEqRel(
             bonding.assetsInEpoch(bonding.epochStartTime() + bonding.epochDuration()),
@@ -357,6 +365,7 @@ contract BondingTest is ConicPoolBaseTest {
 
         vm.expectRevert("Min. bonding amount not reached");
         bonding.bondCncCrvUsd(300 * 10 ** decimals, 290e18, 180 days);
+        _validateBondPriceAndAvailable();
     }
 
     function testRewardTokensGoToDebtPool() public {
@@ -375,6 +384,7 @@ contract BondingTest is ConicPoolBaseTest {
         crvusdPool.lpToken().approve(address(bonding), 50_000 * 10 ** decimals);
 
         bonding.bondCncCrvUsd(1_000 * 10 ** decimals, 490e18, 180 days);
+        _validateBondPriceAndAvailable();
 
         assertApproxEqRel(
             bonding.assetsInEpoch(bonding.epochStartTime() + bonding.epochDuration()),
@@ -388,5 +398,10 @@ contract BondingTest is ConicPoolBaseTest {
 
         assertGt(IERC20(Tokens.CRV).balanceOf(address(c3po)), 0);
         assertGt(IERC20(Tokens.CVX).balanceOf(address(c3po)), 0);
+    }
+
+    function _validateBondPriceAndAvailable() internal {
+        assertApproxEqRel(bonding.cncAvailable(), bonding.cncAvailableCache(), 0.001e18);
+        assertApproxEqRel(bonding.cncBondPrice(), bonding.computeCurrentCncBondPrice(), 0.001e18);
     }
 }
