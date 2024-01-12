@@ -9,6 +9,7 @@ interface IConicDebtToken is IERC20 {
     event DebtPoolSet(address indexed debtPool);
     event RefundClaimed(address claimant, uint256 amount);
     event ClaimingStarted();
+    event ClaimingTerminated();
     event DebtTokenClaimed(address claimant, uint256 amount);
 
     function depositRefund(uint256 amount) external;
@@ -29,4 +30,6 @@ interface IConicDebtToken is IERC20 {
     function setDebtPool(address debtPool) external;
 
     function burn(address account, uint256 amount) external;
+
+    function terminateClaiming() external;
 }

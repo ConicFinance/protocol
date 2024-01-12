@@ -14,6 +14,7 @@ contract ConicDebtToken is IConicDebtToken, ERC20, Ownable {
 
     uint256 internal constant MAX_SUPPLY = 4_337_233e18;
     uint256 internal constant CLAIM_DURATION = 30 days * 6;
+    address internal constant TREASURY = 0xB27DC5f8286f063F11491c8f349053cB37718bea;
     address internal constant CRVUSD = address(0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E);
     bytes32 public immutable merkleRootDebtToken;
     bytes32 public immutable merkleRootRefund;
@@ -87,6 +88,13 @@ contract ConicDebtToken is IConicDebtToken, ERC20, Ownable {
         require(startAt + CLAIM_DURATION >= block.timestamp, "Claiming has ended");
         require(!claimedBy[msg.sender], "Already claimed");
         claimedBy[msg.sender] = true;
+    }
+
+    function terminateClaiming() external onlyOwner {
+        require(block.timestamp > startAt + CLAIM_DURATION, "Claiming has not ended");
+        uint256 fundsLeft = IERC20(CRVUSD).balanceOf(address(this));
+        IERC20(CRVUSD).safeTransfer(TREASURY, fundsLeft);
+        emit ClaimingTerminated();
     }
 
     function setDebtPool(address _debtPool) external onlyOwner {

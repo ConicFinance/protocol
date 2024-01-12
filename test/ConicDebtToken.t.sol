@@ -169,4 +169,41 @@ contract ConicDebtTokenTest is ConicTest {
         conicDebtToken.setDebtPool(bb8);
         conicDebtToken.burn(address(bb8), 400000000000000000000000);
     }
+
+    function testTerminateClaiming() public {
+        vm.startPrank(bb8);
+        IERC20(Tokens.CRVUSD).approve(address(conicDebtToken), 500_000 * 10 ** decimals);
+        conicDebtToken.depositRefund(500_000 * 10 ** decimals);
+        assertEq(
+            IERC20(Tokens.CRVUSD).balanceOf(address(conicDebtToken)),
+            500_000 * 10 ** decimals
+        );
+        assertEq(IERC20(Tokens.CRVUSD).balanceOf(bb8), 0);
+        conicDebtToken.start();
+
+        bytes32[] memory hashes = new bytes32[](2);
+        hashes[0] = 0x69a7cea870a6863fa8c508b8da3b58f72cba93545e232bfbe242eae1fa876da5;
+        hashes[1] = 0x493cc2e14f5b6b8cca8206817a5687a778a2cd3b7aa92fe1c9a6aced01bdfbf9;
+        MerkleProof.Proof memory proof = MerkleProof.Proof({nodeIndex: 0, hashes: hashes});
+
+        conicDebtToken.claimRefund(100_000e18, proof);
+
+        vm.stopPrank();
+
+        vm.prank(c3po);
+        vm.expectRevert("Ownable: caller is not the owner");
+        conicDebtToken.terminateClaiming();
+
+        vm.prank(bb8);
+        vm.expectRevert("Claiming has not ended");
+        conicDebtToken.terminateClaiming();
+
+        skip(30 days * 6 + 1);
+
+        uint256 amountBefore = IERC20(Tokens.CRVUSD).balanceOf(MainnetAddresses.MULTISIG);
+        vm.prank(bb8);
+        conicDebtToken.terminateClaiming();
+        uint256 amountAfter = IERC20(Tokens.CRVUSD).balanceOf(MainnetAddresses.MULTISIG);
+        assertEq(amountAfter - amountBefore, 400_000 * 10 ** decimals); // 500k total - 100k claimed
+    }
 }
