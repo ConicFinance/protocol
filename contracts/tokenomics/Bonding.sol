@@ -28,7 +28,7 @@ contract Bonding is IBonding, Ownable {
     uint256 public constant MIN_CNC_START_PRICE = 1e18;
     uint256 public constant MIN_PRICE_INCREASE_FACTOR = 1e18;
     uint256 public constant MAX_MIN_BONDING_AMOUNT = 1_000e18;
-    uint256 public constant INITIAL_MIN_BONDING_AMOUNT = 100e18;
+    uint256 public constant INITIAL_MIN_BONDING_AMOUNT = 1_000e18;
 
     ICNCLockerV3 public immutable cncLocker;
     IController public immutable controller;
@@ -134,7 +134,7 @@ contract Bonding is IBonding, Ownable {
     ) external override returns (uint256) {
         if (!bondingStarted) return 0;
         require(block.timestamp <= bondingEndTime, "Bonding has ended");
-        require(lpTokenAmount > minBondingAmount, "Min. bonding amount not reached");
+        require(lpTokenAmount >= minBondingAmount, "Min. bonding amount not reached");
         _updateAvailableCncAndStartPrice();
         uint256 currentCncBondPrice = computeCurrentCncBondPrice();
         uint256 cncToReceive = lpTokenAmount.divDown(currentCncBondPrice);
