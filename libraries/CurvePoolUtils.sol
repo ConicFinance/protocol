@@ -69,11 +69,11 @@ library CurvePoolUtils {
                         fromBalance
                     );
                 }
-                uint256 _minImbalanceBuffer = poolMeta.imbalanceBuffers[i].max(
+                uint256 _maxImbalanceBuffer = poolMeta.imbalanceBuffers[i].max(
                     poolMeta.imbalanceBuffers[j]
                 );
 
-                if (!_isWithinThreshold(toExpected, toActual, poolFee, _minImbalanceBuffer))
+                if (!_isWithinThreshold(toExpected, toActual, poolFee, _maxImbalanceBuffer))
                     revert NotWithinThreshold(poolMeta.pool, i, j);
             }
         }
