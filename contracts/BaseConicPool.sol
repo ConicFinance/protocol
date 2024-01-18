@@ -557,6 +557,7 @@ abstract contract BaseConicPool is IConicPool, Pausable {
      * @param curvePool_ Curve pool for which the Convex PID is invalid (has been shut down)
      */
     function handleInvalidConvexPid(address curvePool_) external override returns (uint256) {
+        runSanityChecks();
         uint256 pid = weightManager.handleInvalidConvexPid(curvePool_);
         emit HandledInvalidConvexPid(curvePool_, pid);
         return pid;
