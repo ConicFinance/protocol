@@ -127,6 +127,8 @@ contract ConicTest is Test {
     uint256 internal constant TEST_REBALANCING_REWARD_PER_DOLLAR_PER_SECOND =
         5e18 / uint256(3600 * 1 * 10_000 * 6);
 
+    uint256 internal constant VM_INIT_TIMESTAMP = 1705667180;
+
     address public bb8 = makeAddr("bb8"); // 0xE2Fca394F3a28F1717EFAB57339540306F303f6f
     address public r2 = makeAddr("r2"); // 0x2A71967CF1d84B413bb804418b54407822914D80
     address public c3po = makeAddr("c3po"); // 0x6763367385beC272a5BA2C1Fb3e7FCd36485e4FD
@@ -229,6 +231,9 @@ contract ConicTest is Test {
     }
 
     function _createInflationManager(Controller controller) internal returns (InflationManager) {
+        if (!_isFork) {
+            vm.warp(VM_INIT_TIMESTAMP);
+        }
         InflationManager inflationManager = new InflationManager(address(controller));
         controller.setInflationManager(address(inflationManager));
         return inflationManager;
