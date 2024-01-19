@@ -24,7 +24,8 @@ contract InflationManager is IInflationManager, Ownable {
     uint256 internal constant _INITIAL_INFLATION_RATE = 1_500_000 * 1e18;
     uint256 internal constant _INFLATION_RATE_DECAY = 0.3999999 * 1e18;
     uint256 internal constant _INFLATION_RATE_PERIOD = 365 days;
-    uint256 internal constant _INFLATION_REDIRECTION_TIMESTAMP = 1691139491; // timestamp at which inflation started to be redirected
+    // 155 days 66228 seconds: 1st of March 2023 (2023-03-01T14:34:23) to August 4th 2023 (2023-08-04T08:58:11)
+    uint256 internal constant _INFLATION_SECONDS_USED = 13_458_228;
 
     /// @dev mapping from conic pool to their rebalancing reward handlers
     mapping(address => EnumerableSet.AddressSet) internal _rebalancingRewardHandlers;
@@ -40,7 +41,7 @@ contract InflationManager is IInflationManager, Ownable {
         controller = IController(_controller);
 
         currentInflationRate = _INITIAL_INFLATION_RATE / _INFLATION_RATE_PERIOD;
-        lastInflationRateDecay = _INFLATION_REDIRECTION_TIMESTAMP;
+        lastInflationRateDecay = block.timestamp - _INFLATION_SECONDS_USED;
     }
 
     /// @notice returns the weights of the Conic pools to know how much inflation
