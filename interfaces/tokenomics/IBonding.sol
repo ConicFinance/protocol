@@ -7,6 +7,7 @@ interface IBonding {
     event MinBondingAmountSet(uint256 amount);
     event Bonded(
         address indexed account,
+        address indexed recipient,
         uint256 lpTokenAmount,
         uint256 cncReceived,
         uint256 lockTime
@@ -48,4 +49,11 @@ interface IBonding {
     function cncAvailable() external view returns (uint256);
 
     function cncBondPrice() external view returns (uint256);
+
+    function bondCncCrvUsdFor(
+        uint256 lpTokenAmount,
+        uint256 minCncReceived,
+        uint64 cncLockTime,
+        address recipient
+    ) external returns (uint256);
 }
