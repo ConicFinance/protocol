@@ -132,6 +132,15 @@ contract Bonding is IBonding, Ownable {
         uint256 minCncReceived,
         uint64 cncLockTime
     ) external override returns (uint256) {
+        return bondCncCrvUsdFor(lpTokenAmount, minCncReceived, cncLockTime, msg.sender);
+    }
+
+    function bondCncCrvUsdFor(
+        uint256 lpTokenAmount,
+        uint256 minCncReceived,
+        uint64 cncLockTime,
+        address recipient
+    ) public override returns (uint256) {
         if (!bondingStarted) return 0;
         require(block.timestamp <= bondingEndTime, "Bonding has ended");
         require(lpTokenAmount >= minBondingAmount, "Min. bonding amount not reached");
@@ -146,7 +155,7 @@ contract Bonding is IBonding, Ownable {
         require(cncToReceive >= minCncReceived, "Insufficient CNC received");
 
         // Checkpoint to set user integrals etc.
-        _accountCheckpoint(msg.sender);
+        _accountCheckpoint(recipient);
 
         IERC20 lpToken = IERC20(crvUsdPool.lpToken());
         lpToken.safeTransferFrom(msg.sender, address(this), lpTokenAmount);
@@ -158,13 +167,13 @@ contract Bonding is IBonding, Ownable {
         assetsInEpoch[epochStartTime + epochDuration] += lpTokenAmount;
         cncDistributed += cncToReceive;
         CNC.approve(address(cncLocker), cncToReceive);
-        cncLocker.lockFor(cncToReceive, cncLockTime, false, msg.sender);
+        cncLocker.lockFor(cncToReceive, cncLockTime, false, recipient);
 
         lastCncPrice = currentCncBondPrice < MIN_CNC_START_PRICE
             ? MIN_CNC_START_PRICE
             : currentCncBondPrice;
 
-        emit Bonded(msg.sender, lpTokenAmount, cncToReceive, cncLockTime);
+        emit Bonded(msg.sender, recipient, lpTokenAmount, cncToReceive, cncLockTime);
         return cncToReceive;
     }
 

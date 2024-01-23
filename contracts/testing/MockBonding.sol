@@ -18,6 +18,15 @@ contract MockBonding is IBonding {
         return 0;
     }
 
+    function bondCncCrvUsdFor(
+        uint256,
+        uint256,
+        uint64,
+        address
+    ) public pure override returns (uint256) {
+        return 0;
+    }
+
     function recoverRemainingCNC() external override {}
 
     function claimStream() external override {}

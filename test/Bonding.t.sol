@@ -83,14 +83,14 @@ contract BondingTest is ConicPoolBaseTest {
         assertApproxEqRel(10_000 * 10 ** decimals, lpReceived, 0.01e18);
         crvusdPool.lpToken().approve(address(bonding), 10_000 * 10 ** decimals);
 
-        bonding.bondCncCrvUsd(1_000 * 10 ** decimals, 490e18, 180 days);
+        uint256 cncReceived = bonding.bondCncCrvUsd(1_000 * 10 ** decimals, 490e18, 180 days);
         _validateBondPriceAndAvailable();
 
-        uint256 cncReceived = cnc.balanceOf(address(locker));
         uint256 crvUsdReceived = lpTokenStaker.getUserBalanceForPool(
             address(crvusdPool),
             address(bonding)
         );
+        assertEq(locker.lockedBalance(bb8), cncReceived);
         assertApproxEqRel(cncReceived, 5_00e18, 0.01e18);
         assertApproxEqRel(crvUsdReceived, 1_000e18, 0.01e18);
         assertApproxEqRel(bonding.cncDistributed(), 5_00e18, 0.01e18);
@@ -101,6 +101,25 @@ contract BondingTest is ConicPoolBaseTest {
             10_00e18,
             0.01e18
         );
+    }
+
+    function testSingleBondFor() public {
+        vm.startPrank(address(bb8));
+        // get LP tokens and don't stake
+        underlying.approve(address(crvusdPool), 100_000 * 10 ** decimals);
+        crvusdPool.deposit(10_000 * 10 ** decimals, 1, false);
+        uint256 lpReceived = crvusdPool.lpToken().balanceOf(bb8);
+        assertApproxEqRel(10_000 * 10 ** decimals, lpReceived, 0.01e18);
+        crvusdPool.lpToken().approve(address(bonding), 10_000 * 10 ** decimals);
+
+        uint256 cncReceived = bonding.bondCncCrvUsdFor(
+            1_000 * 10 ** decimals,
+            490e18,
+            180 days,
+            c3po
+        );
+        _validateBondPriceAndAvailable();
+        assertEq(locker.lockedBalance(c3po), cncReceived);
     }
 
     function testSingleBondAfterMultipleEpochs() public {
