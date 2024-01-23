@@ -125,5 +125,7 @@ interface IConicPool is IConicPoolWeightManagement, IPausable {
 
     function rebalancingRewardsActivatedAt() external view returns (uint64);
 
+    function getWeights() external view returns (PoolWeight[] memory);
+
     function runSanityChecks() external;
 }
