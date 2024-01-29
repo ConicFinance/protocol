@@ -27,24 +27,24 @@
     "lpSymbol": "cncUSDC",
     "curvePools": [
       {
-        "name": "DAI+USDC+USDT",
-        "address": "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7",
-        "weight": "0.4459"
+        "name": "crvUSD/USDC",
+        "address": "0x4dece678ceceb27446b35c672dc7d61f30bad69e",
+        "weight": "0.4186"
       },
       {
-        "name": "FRAX+USDC",
-        "address": "0xDcEF968d416a41Cdac0ED8702fAC8128A64241A2",
-        "weight": "0.1998"
+        "name": "MIM/3CRV",
+        "address": "0x5a6a4d54456819380173272a5e8e9b9904bdf41b",
+        "weight": "0.096"
       },
       {
-        "name": "FRAX+3CRV",
-        "address": "0xd632f22692FaC7611d2AA1C0D552930D43CAEd3B",
-        "weight": "0.1963"
+        "name": "FRAX/USDC",
+        "address": "0xdcef968d416a41cdac0ed8702fac8128a64241a2",
+        "weight": "0.227"
       },
       {
-        "name": "sUSD+3CRV",
-        "address": "0xA5407eAE9Ba41422680e2e00537571bcC53efBfD",
-        "weight": "0.158"
+        "name": "3POOL",
+        "address": "0xbebc44782c7db0a1a60cb6fe97d0b483032ff1c7",
+        "weight": "0.2584"
       }
     ]
   },
@@ -54,19 +54,24 @@
     "lpSymbol": "cncETH",
     "curvePools": [
       {
-        "name": "ETH+stETH",
-        "address": "0xDC24316b9AE028F1497c275EB9192a3Ea0f67022",
-        "weight": "0.9"
+        "name": "FRXETH/ETH",
+        "address": "0xa1f8a6807c402e4a15ef4eba36528a3fed24e577",
+        "weight": "0.0967"
       },
       {
-        "name": "ETH+cbETH",
-        "address": "0x5FAE7E604FC3e24fd43A72867ceBaC94c65b404A",
-        "weight": "0.05"
+        "name": "FRXETH/WETH ng",
+        "address": "0x9c3b46c0ceb5b9e304fcd6d88fc50f7dd24b31bc",
+        "weight": "0.3332"
       },
       {
-        "name": "ETH+rETH",
-        "address": "0x0f3159811670c117c372428D4E69AC32325e4D0F",
-        "weight": "0.05"
+        "name": "ETH/stETH ng",
+        "address": "0x21e27a5e5513d6e65c4f830167390997aa84843a",
+        "weight": "0.3216"
+      },
+      {
+        "name": "ETH/stETH",
+        "address": "0xdc24316b9ae028f1497c275eb9192a3ea0f67022",
+        "weight": "0.2485"
       }
     ]
   },
@@ -103,12 +108,8 @@
         "address": "0x4DEcE678ceceb27446b35C672dC7d61F30bAD69E"
       },
       {
-        "name": "TUSD+crvUSD",
-        "address": "0x34D655069F4cAc1547E4C8cA284FfFF5ad4A8db0"
-      },
-      {
-        "name": "USDP+crvUSD",
-        "address": "0xCa978A0528116DDA3cbA9ACD3e68bc6191CA53D0"
+        "name": "FRAX+crvUSD",
+        "address": "0x0cd6f267b2086bea681e922e19d40512511be538"
       }
     ]
   }

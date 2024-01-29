@@ -25,6 +25,7 @@ networks:
         - 0xB27DC5f8286f063F11491c8f349053cB37718bea # Multisig
         - 0xFcb19e6a322b27c06842A71e8c725399f049AE3a # USDC Owner
         - 0x47ac0Fb4F2D84898e4D9E7b4DaB3C24507a6D503 # Binance (because it's rich)
+        - 0xf977814e90da44bfa03b6295a0616a897441acec # Other binance
   development-persistent:
     cmd_settings:
       evm_version: london

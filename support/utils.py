@@ -10,10 +10,10 @@ def get_account(address: str):
     return [acc for acc in accounts if acc.address == address][0]
 
 
-def get_mainnet_address(contract: str) -> str:
+def get_mainnet_address(contract: str, index: int = 0) -> str:
     config_path = get_loaded_projects()[0]._path / "build" / "deployments" / "map.json"
     with config_path.open() as fp:
-        return json.load(fp)["1"][contract][0]
+        return json.load(fp)["1"][contract][index]
 
 
 def load_deployer_account():

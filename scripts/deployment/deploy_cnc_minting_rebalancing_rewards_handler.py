@@ -6,7 +6,7 @@ from brownie import (
     InflationManager,  # type: ignore
     GovernanceProxy,  # type: ignore
 )
-from support.constants import GAS_PRICE
+from support.constants import GAS_PRICE, LAST_REBALANCING_REWARD_HANDLER_ADDRESS
 from support.utils import load_deployer_account
 from support.addresses import CNC
 
@@ -17,12 +17,12 @@ def main():
         CNCMintingRebalancingRewardsHandler,
         Controller[0],
         CNC,
-        CNCMintingRebalancingRewardsHandler[0],
+        LAST_REBALANCING_REWARD_HANDLER_ADDRESS,
         gas_price=GAS_PRICE,
     )
-    cnc_minting_rebalancing_rewards_handler.transferOwnership(
-        GovernanceProxy[0], {"from": deployer, "gas_price": GAS_PRICE}
-    )
+    # cnc_minting_rebalancing_rewards_handler.transferOwnership(
+    #     GovernanceProxy[0], {"from": deployer, "gas_price": GAS_PRICE}
+    # )
 
 
 def generate_upgrade_governance_call(old_reward_handler, new_reward_handler):

@@ -6,13 +6,12 @@ from brownie import (
     interface,
     CurveLPOracle,
     DerivativeOracle,
-    EmergencyMinter,
     GenericOracle,
     InflationManager,
     Controller,
-    ChainlinkOracle
+    ChainlinkOracle,
 )
-from support.constants import GAS_PRICE, VETO_MULTISIG_ADDRESS  # type: ignore
+from support.constants import GAS_PRICE, MULTISIG_ADDRESS, VETO_MULTISIG_ADDRESS  # type: ignore
 from support.utils import load_deployer_account
 
 
@@ -20,7 +19,7 @@ def main():
     deployer = load_deployer_account()
     params = {"from": deployer, "gas_price": GAS_PRICE}
     governance_proxy = deployer.deploy(
-        GovernanceProxy, deployer, VETO_MULTISIG_ADDRESS, gas_price=GAS_PRICE
+        GovernanceProxy, MULTISIG_ADDRESS, VETO_MULTISIG_ADDRESS, gas_price=GAS_PRICE
     )
     CNCLockerV3[0].transferOwnership(governance_proxy, params)
     CNCMintingRebalancingRewardsHandler[0].transferOwnership(governance_proxy, params)
@@ -31,7 +30,6 @@ def main():
         reward_manager.transferOwnership(governance_proxy, params)
     Controller[0].transferOwnership(governance_proxy, params)
     CurveLPOracle[0].transferOwnership(governance_proxy, params)
-    EmergencyMinter[0].transferOwnership(governance_proxy, params)
     GenericOracle[0].transferOwnership(governance_proxy, params)
     InflationManager[0].transferOwnership(governance_proxy, params)
     ChainlinkOracle[0].transferOwnership(governance_proxy, params)

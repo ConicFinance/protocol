@@ -4,12 +4,14 @@ pragma solidity 0.8.17;
 import "../interfaces/pools/IConicPoolWeightManagement.sol";
 import "./ConicTest.sol";
 import "./ConicPoolBaseTest.sol";
+import "../contracts/helpers/BondingHelper.sol";
 
 contract BondingTest is ConicPoolBaseTest {
     Bonding public bonding;
     IConicPool public crvusdPool;
     IERC20Metadata public underlying;
     uint256 public decimals;
+    BondingHelper public bondingHelper;
 
     function setUp() public override {
         super.setUp();
@@ -50,6 +52,8 @@ contract BondingTest is ConicPoolBaseTest {
         vm.prank(bb8);
         cnc.transfer(address(bonding), 104_000e18);
         bonding.startBonding();
+
+        bondingHelper = new BondingHelper(address(bonding));
     }
 
     function testInitialState() public {
@@ -187,14 +191,8 @@ contract BondingTest is ConicPoolBaseTest {
             0.01e18
         );
 
-        uint256 balanceBefore = crvusdPool.lpToken().balanceOf(address(bb8));
-        bonding.claimStream();
-
-        assertApproxEqRel(
-            2_000 * 10 ** decimals,
-            crvusdPool.lpToken().balanceOf(address(bb8)) - balanceBefore,
-            0.01e18
-        );
+        uint256 claimed = _claimStream(address(bb8));
+        assertApproxEqRel(2_000 * 10 ** decimals, claimed, 0.01e18);
     }
 
     function testTwoBondsSameEpoch() public {
@@ -290,23 +288,23 @@ contract BondingTest is ConicPoolBaseTest {
         // Claiming in epoch 4
         vm.stopPrank();
         vm.startPrank(address(bb8));
-        uint256 balanceBefore = crvusdPool.lpToken().balanceOf(address(bb8));
-        bonding.claimStream();
-        assertApproxEqRel(
-            1_250 * 10 ** decimals,
-            crvusdPool.lpToken().balanceOf(address(bb8)) - balanceBefore,
-            0.01e18
-        );
+        uint256 claimed = _claimStream(address(bb8));
+        assertApproxEqRel(1_250 * 10 ** decimals, claimed, 0.01e18);
 
         vm.stopPrank();
         vm.startPrank(address(c3po));
-        balanceBefore = crvusdPool.lpToken().balanceOf(address(c3po));
-        bonding.claimStream();
-        assertApproxEqRel(
-            750 * 10 ** decimals,
-            crvusdPool.lpToken().balanceOf(address(c3po)) - balanceBefore,
-            0.01e18
-        );
+        claimed = _claimStream(address(c3po));
+        assertApproxEqRel(750 * 10 ** decimals, claimed, 0.01e18);
+    }
+
+    function testClaimableAfterSeveralEpochs() public {
+        vm.startPrank(address(bb8));
+        underlying.approve(address(crvusdPool), 100_000 * 10 ** decimals);
+        crvusdPool.deposit(100_000 * 10 ** decimals, 1, false);
+        crvusdPool.lpToken().approve(address(bonding), 100_000 * 10 ** decimals);
+        bonding.bondCncCrvUsd(2_000 * 10 ** decimals, 490e18, 180 days);
+        skip(7 days * 3 + 1 days);
+        _claimStream(address(bb8));
     }
 
     function testTwoBondAndClaimWithNonBondingLocks() public {
@@ -354,22 +352,12 @@ contract BondingTest is ConicPoolBaseTest {
             0.01e18
         );
 
-        uint256 balanceBefore = crvusdPool.lpToken().balanceOf(address(bb8));
-        bonding.claimStream();
-        assertApproxEqRel(
-            1_000 * 10 ** decimals,
-            crvusdPool.lpToken().balanceOf(address(bb8)) - balanceBefore,
-            0.01e18
-        );
+        uint256 claimed = _claimStream(address(bb8));
+        assertApproxEqRel(1_000 * 10 ** decimals, claimed, 0.01e18);
         vm.stopPrank();
         vm.startPrank(c3po);
-        balanceBefore = crvusdPool.lpToken().balanceOf(address(c3po));
-        bonding.claimStream();
-        assertApproxEqRel(
-            1_000 * 10 ** decimals,
-            crvusdPool.lpToken().balanceOf(address(c3po)) - balanceBefore,
-            0.01e18
-        );
+        claimed = _claimStream(address(c3po));
+        assertApproxEqRel(1_000 * 10 ** decimals, claimed, 0.01e18);
     }
 
     function testMinBondingAmount() public {
@@ -423,5 +411,14 @@ contract BondingTest is ConicPoolBaseTest {
     function _validateBondPriceAndAvailable() internal {
         assertApproxEqRel(bonding.cncAvailable(), bonding.cncAvailableCache(), 0.001e18);
         assertApproxEqRel(bonding.cncBondPrice(), bonding.computeCurrentCncBondPrice(), 0.001e18);
+    }
+
+    function _claimStream(address account) internal returns (uint256 claimed) {
+        uint256 balanceBefore = crvusdPool.lpToken().balanceOf(account);
+        uint256 expected = bondingHelper.claimableCrvUsd(account);
+        bonding.claimStream();
+        uint256 balanceAfter = crvusdPool.lpToken().balanceOf(account);
+        claimed = balanceAfter - balanceBefore;
+        assertEq(claimed, expected, "Wrong amount claimed");
     }
 }

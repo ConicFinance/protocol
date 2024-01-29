@@ -1,12 +1,14 @@
 import json
 
-from brownie import ConicEthPool, RewardManager
+from decimal import Decimal
+
+from brownie import ConicEthPool, RewardManager, Controller
 from brownie.project.main import get_loaded_projects
 from support.constants import GAS_PRICE  # type: ignore
 from support.utils import load_deployer_account, get_mainnet_address
-from support.addresses import *  # type: ignore
+from support.addresses import CVX, CRV
 
-MAX_DEVIATION = int(5e16)
+MAX_DEVIATION = int(2e16)
 
 
 def get_config():
@@ -27,7 +29,6 @@ def main():
         RewardManager,
         get_mainnet_address("Controller"),
         config["underlying"],
-        get_mainnet_address("CNCLockerV3"),
         gas_price=GAS_PRICE,
     )
 
@@ -44,28 +45,28 @@ def main():
     )
 
     params = {"from": deployer, "gas_price": GAS_PRICE}
+    reward_manager.initialize(conic_pool, params)
     conic_pool.setMaxDeviation(MAX_DEVIATION, params)
     governance_proxy = get_mainnet_address("GovernanceProxy")
     conic_pool.transferOwnership(governance_proxy, params)
     reward_manager.transferOwnership(governance_proxy, params)
 
-    ###
+    #
     # All of this we will need to do through the governance proxy from the multisig after deployment
-    ###
-    # Controller[0].addPool(conic_pool, {"gas_price": GAS_PRICE, "from": deployer})
+    #
+    Controller[0].addPool(conic_pool, {"gas_price": GAS_PRICE, "from": deployer})
     # InflationManager[0].addPoolRebalancingRewardHandler(
     #     conic_pool,
     #     CNCMintingRebalancingRewardsHandler[0],
     #     {"gas_price": GAS_PRICE, "from": deployer},
     # )
-    # weights = []
-    # curve_pools = config["curvePools"]
-    # for curve_pool in curve_pools:
-    #     conic_pool.addCurvePool(
-    #         curve_pool["address"], {"gas_price": GAS_PRICE, "from": deployer}
-    #     )
-    #     weights.append((curve_pool["address"], Decimal(curve_pool["weight"])*10**18))
-    # Controller[0].updateWeights(
-    #     (conic_pool, weights), {"gas_price": GAS_PRICE, "from": deployer}
-    # )
-    return conic_pool
+    conic_pool = ConicEthPool[0]
+    weights = []
+    curve_pools = config["curvePools"]
+    for curve_pool in curve_pools:
+        conic_pool.addPool(curve_pool["address"], params)
+        weights.append(
+            (curve_pool["address"], Decimal(curve_pool["weight"]) * 10**18)
+        )
+    weights = sorted(weights, key=lambda x: x[0].lower())
+    Controller[0].updateWeights((conic_pool, weights), params)

@@ -1,4 +1,3 @@
-build/
 __pycache__
 node_modules
 env/
@@ -10,3 +9,8 @@ cache/
 out/
 lcov.info
 misc/update-weights-encoded.txt
+build/*
+!build/deployments
+build/deployments/*
+!build/deployments/map.json
+!build/deployments/1
