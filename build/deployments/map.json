@@ -24,6 +24,9 @@
     "ConicEthPool": [
       "0x3367070ed152e2b715eef48D157685Cf496f3543"
     ],
+    "ConicLpTokenOracle": [
+      "0x364E5736D9ff2d3C2Fb3F8ecCD33D97bb4D210BB"
+    ],
     "ConicPool": [
       "0x80a3604977270B7Ef2e637f9Eb78cE1c3FA64316",
       "0x89dc3E9d493512F6CFb923E15369ebFddE591988"
