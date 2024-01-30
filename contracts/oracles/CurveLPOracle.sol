@@ -15,6 +15,12 @@ import "../../interfaces/vendor/ICurvePoolV0.sol";
 import "../../interfaces/vendor/ICurvePoolV1.sol";
 import "../../interfaces/vendor/ICurveMetaRegistry.sol";
 
+/*
+ * This oracle is used for the exchange rate for the Curve Pools supporting Conic LP Tokens.
+ * It uses a prepare/execute update pattern to protect against potential sandwich attacks during the update.
+ * This should not be considered a general purpose oracle, it is only meant to be used for Curve pools.
+ * The prices here will be updated periodically by the Conic team, but may not reflect the current market price.
+ */
 contract CurveLPOracle is IOracle, Ownable {
     using ScaledMath for uint256;
 
